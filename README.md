@@ -1,8 +1,10 @@
 # The Rusty Griffin (Ржавый Грифон)
 
-**Play in the browser: https://iansilent.github.io/rusty-griffin/**
-
 A cozy web prototype: you run a magic weapon shop for heroes. The look is old fantasy with a dungeon synth mood.
+
+[![The Rusty Griffin: a one-armed orc asks for a weapon against wolves](docs/screenshot.jpg)](https://iansilent.github.io/rusty-griffin/)
+
+**[▶ Play in the browser](https://iansilent.github.io/rusty-griffin/)** · mouse · UI in Russian
 
 ## The loop
 
