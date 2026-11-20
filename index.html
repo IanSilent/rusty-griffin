@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ржавый Грифон — лавка зачарованного оружия</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Ruslan+Display&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0810; --panel:#15101d; --panel2:#1c1527; --line:#3a2d4d; --line2:#55426e;
+  --bone:#d8cdb4; --dim:#8d8199; --violet:#8a6bbd; --moss:#7f9f66; --gold:#c9a44c; --blood:#b0524a;
+  --title:"Ruslan Display","Old Standard TT",Georgia,serif;
+  --body:"Old Standard TT",Georgia,"Times New Roman",serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--bone);font-family:var(--body);font-size:17px;line-height:1.35}
+body{min-height:100vh;background:
+  radial-gradient(ellipse at 50% 0%,#231838 0%,transparent 60%),var(--bg)}
+/* xerox grain over everything */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.13;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+#app{max-width:980px;margin:0 auto;padding:14px 16px 40px}
+header{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px}
+h1{font-family:var(--title);font-weight:400;font-size:34px;letter-spacing:2px;margin:0;color:var(--bone);text-shadow:0 0 18px #6b4fa055,2px 2px 0 #000}
+.sub{color:var(--dim);font-style:italic;font-size:14px;letter-spacing:1px}
+.stats{margin-left:auto;display:flex;gap:16px;align-items:center;font-size:16px}
+.stats b{color:var(--gold);font-weight:700}
+.stats .fame b{color:var(--violet)}
+button{font-family:var(--body);font-size:16px;color:var(--bone);background:var(--panel2);border:1px solid var(--line2);padding:6px 12px;cursor:pointer;border-radius:0}
+button:hover:not(:disabled){border-color:var(--gold);color:#fff}
+button:disabled{opacity:.35;cursor:default}
+button.big{font-family:var(--title);font-size:20px;letter-spacing:1px;padding:10px 22px;border:1px solid var(--gold);box-shadow:inset 0 0 0 2px var(--bg),inset 0 0 0 3px var(--line2)}
+button.sm{font-size:14px;padding:3px 9px}
+.frame{background:var(--panel);border:1px solid var(--line2);box-shadow:inset 0 0 0 3px var(--bg),inset 0 0 0 4px var(--line);padding:14px}
+.stage{position:relative;padding:8px}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+#scene{width:100%;max-width:640px;margin:0 auto;height:auto;aspect-ratio:256/144;background:#000}
+#speech{margin-top:8px;min-height:74px;padding:10px 14px;border-left:3px solid var(--violet);background:var(--panel2);font-size:17px}
+#speech .who{font-family:var(--title);color:var(--gold);letter-spacing:1px;font-size:17px}
+#speech .who small{font-family:var(--body);color:var(--dim);font-style:italic;font-size:14px;letter-spacing:0}
+.chip{display:inline-block;border:1px solid var(--blood);color:#e3a39c;font-size:13px;padding:0 7px;margin-left:6px}
+#panel{margin-top:12px}
+h2{font-family:var(--title);font-weight:400;font-size:20px;letter-spacing:1px;margin:0 0 8px;color:var(--bone)}
+h3{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin:12px 0 6px;font-weight:400}
+h3:first-child{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.tile{text-align:left;padding:6px 8px;min-height:58px;line-height:1.2;display:flex;flex-direction:column;gap:2px}
+.tile .n{font-size:16px}
+.tile .d{font-size:12.5px;color:var(--dim)}
+.tile .c{font-size:12.5px;color:var(--gold)}
+.tile.on{border-color:var(--gold);background:#2a1f3a;box-shadow:inset 0 0 0 1px var(--gold)}
+.tile.lock{border-style:dashed}
+.craftrow{display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.craftrow .txt{flex:1;min-width:200px}
+.craftrow .txt .nm{font-size:19px}
+.craftrow .txt .cat{color:var(--dim);font-style:italic;font-size:15px}
+#prev{width:96px;height:96px;background:var(--bg);border:1px solid var(--line)}
+.quest{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;color:var(--dim);font-size:15px}
+.quest b{color:var(--bone);font-weight:400}
+.quest .pay{color:var(--gold)}
+/* letters */
+.letter{display:flex;gap:12px;margin-bottom:10px;background:var(--panel2);border:1px solid var(--line);padding:10px;animation:rise .5s both}
+.letter canvas{width:80px;height:112px;background:var(--bg);border:1px solid var(--line);flex:none}
+.letter .t{font-family:var(--title);font-size:17px;letter-spacing:1px}
+.letter .o0{color:var(--gold)} .letter .o1{color:var(--moss)} .letter .o2{color:var(--dim)} .letter .o3{color:var(--blood)}
+.letter p{margin:4px 0;font-style:italic}
+.letter ul{margin:4px 0;padding:0;list-style:none;font-size:15px}
+.letter li.p{color:#a9c392} .letter li.m{color:#d98d85} .letter li.z{color:var(--dim)}
+.letter .pay{color:var(--gold);margin-top:4px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.up{background:var(--panel2);border:1px solid var(--line);padding:9px;display:flex;flex-direction:column;gap:4px}
+.up.own{opacity:.55}
+.up .n{font-size:17px}
+.up .d{font-size:14px;color:var(--dim);flex:1}
+.center{text-align:center}
+.lead{max-width:640px;margin:8px auto 16px;color:var(--dim);font-style:italic}
+#modal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:20;padding:14px}
+#modal.show{display:flex}
+#modal .frame{max-width:720px;width:100%;max-height:92vh;overflow:auto}
+.bar{position:relative;height:38px;background:#07050a;border:1px solid var(--line2);margin:14px 0}
+.bar .good,.bar .perf{position:absolute;top:0;bottom:0}
+.bar .good{background:#3d2a55}
+.bar .perf{background:var(--gold);opacity:.75}
+.bar .mk{position:absolute;top:-5px;bottom:-5px;width:4px;margin-left:-2px;background:var(--bone);box-shadow:0 0 8px #fff}
+.hits{letter-spacing:2px;min-height:26px;color:var(--dim)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
+th{color:var(--dim);font-weight:400;font-size:12.5px;letter-spacing:2px;text-transform:uppercase}
+.muted{color:var(--dim)}
+#tip{position:absolute;display:none;max-width:320px;background:#0b0810;border:1px solid var(--gold);box-shadow:0 0 18px #000;padding:8px 11px;font-size:14.5px;z-index:5;pointer-events:none}
+#tip b{font-family:var(--title);font-weight:400;color:var(--gold);letter-spacing:1px;font-size:15px}
+.famed{color:var(--violet);font-size:13.5px;border:1px solid var(--violet);padding:0 7px;margin-left:6px;white-space:nowrap}
+.chip.vet{border-color:var(--gold);color:var(--gold)}
+.letter li{animation:rise .35s both}
+.stamp{display:inline-block;font-family:var(--title);font-size:30px;letter-spacing:3px;border:3px double currentColor;padding:2px 16px;margin:8px 0 4px;transform:rotate(-3deg);animation:stamp .5s cubic-bezier(.2,1.8,.4,1) both}
+@keyframes stamp{from{transform:scale(3.2) rotate(-16deg);opacity:0}}
+.letter.flash{animation:flash 1.4s both}
+@keyframes flash{0%{box-shadow:0 0 0 0 #c9a44c00;background:#5a4720}30%{box-shadow:0 0 60px 10px #c9a44caa}100%{box-shadow:0 0 14px 0 #c9a44c55;border-color:var(--gold)}}
+.letter.shake{animation:shake .5s both}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.gain{margin-top:8px;padding:7px 10px;border:1px solid var(--gold);background:#2a2114;animation:rise .6s both}
+.gain b{font-family:var(--title);font-weight:400;color:var(--gold);letter-spacing:1px}
+.wait{color:var(--dim);font-style:italic;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.35}to{opacity:1}}
+h2 small{font-family:var(--body);font-size:14px;letter-spacing:0}
+@media(max-width:600px){h1{font-size:25px}html,body{font-size:16px}.stats{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><h1>Ржавый Грифон</h1><div class="sub">лавка зачарованного оружия · у Серой заставы</div></div>
+    <div class="stats">
+      <span>День <b id="sDay">1</b></span>
+      <span>Золото <b id="sGold">0</b></span>
+      <span class="fame">Слава <b id="sFame">0</b></span>
+      <button class="sm" id="bBook">Гримуар</button>
+      <button class="sm" id="bMusic" title="Музыка">♪ выкл</button>
+    </div>
+  </header>
+  <div class="frame stage">
+    <canvas id="scene" width="256" height="144"></canvas>
+    <div id="speech"></div>
+    <div id="tip"></div>
+  </div>
+  <div id="panel" class="frame"></div>
+</div>
+<div id="modal"><div class="frame" id="modalBody"></div></div>
+
+<script>
+'use strict';
+/* ================= DATA ================= */
+const TYPES={
+  sword:{name:'Меч',cls:['metal','stone','bone']},
+  axe:{name:'Секира',cls:['metal','stone','bone'],two:1},
+  dagger:{name:'Кинжал',cls:['metal','stone','bone']},
+  bow:{name:'Лук',cls:['wood','bone'],two:1},
+  staff:{name:'Посох',cls:['wood','bone','metal']},
+  hammer:{name:'Молот',cls:['metal','stone','bone']},
+  gloves:{name:'Перчатки',cls:['soft','metal']},
+  boots:{name:'Сапоги',cls:['soft','metal']},
+  spear:{name:'Копьё',cls:['metal','wood','bone','stone'],two:1,up:'plans'},
+  shield:{name:'Щит',cls:['metal','wood','soft','bone'],up:'plans'},
+  amulet:{name:'Амулет',cls:['metal','stone','bone','wood'],up:'plans'},
+};
+const CLSNAME={metal:'металл',wood:'дерево',soft:'кожа и ткань',stone:'камень',bone:'кость'};
+const MATS={
+  iron:{name:'Железо',of:'из железа',cls:'metal',light:1,str:2,arc:0,rust:1,iron:1,cost:0,col:'#8d8f9c',col2:'#5c5e6b'},
+  bronze:{name:'Бронза',of:'из бронзы',cls:'metal',light:1,str:2,arc:1,norust:1,cost:4,col:'#b5803f',col2:'#7a5428'},
+  ash:{name:'Ясень',of:'из ясеня',cls:'wood',light:2,str:1,arc:1,burn:1,quiet:1,cost:0,col:'#a5865a',col2:'#6b5335'},
+  leather:{name:'Варёная кожа',of:'из варёной кожи',cls:'soft',light:2,str:1,arc:0,comfy:1,quiet:1,cost:0,col:'#7a4f33',col2:'#4d3020'},
+  silver:{name:'Серебро',of:'из серебра',cls:'metal',light:2,str:1,arc:2,norust:1,holy:1,cost:12,up:'smelter',col:'#d4d6e0',col2:'#9698a8'},
+  blacksteel:{name:'Чёрная сталь',of:'из чёрной стали',cls:'metal',light:0,str:3,arc:0,fire:1,iron:1,cost:12,up:'smelter',col:'#3d3a4a',col2:'#23212c'},
+  yew:{name:'Старый тис',of:'из старого тиса',cls:'wood',light:2,str:2,arc:3,burn:1,quiet:1,cost:10,up:'curio',col:'#8a5a3a',col2:'#553521'},
+  obsidian:{name:'Обсидиан',of:'из обсидиана',cls:'stone',light:2,str:1,arc:2,fire:1,brittle:1,norust:1,cost:10,up:'curio',col:'#2a2238',col2:'#6b4fa0'},
+  salamander:{name:'Кожа саламандры',of:'из кожи саламандры',cls:'soft',light:2,str:2,arc:1,comfy:1,fire:1,cost:12,up:'curio',col:'#a8552f',col2:'#6e3219'},
+  mithril:{name:'Мифрил',of:'из мифрила',cls:'metal',light:3,str:3,arc:2,norust:1,cost:30,up:'vein',col:'#bfe0e6',col2:'#7fa8b5'},
+  dragonbone:{name:'Драконья кость',of:'из драконьей кости',cls:'bone',light:1,str:3,arc:2,fire:1,norust:1,cost:25,up:'vein',col:'#d8cdb4',col2:'#9a8f78'},
+  moonsilk:{name:'Лунный шёлк',of:'из лунного шёлка',cls:'soft',light:3,str:1,arc:3,comfy:1,quiet:1,cost:20,up:'vein',col:'#b9b4e0',col2:'#7d76b5'},
+};
+const TAGS=[['fire','не горит'],['burn','горит'],['rust','ржавеет'],['norust','не ржавеет'],['holy','свято'],['quiet','тихий'],['comfy','удобный'],['brittle','хрупкий'],['iron','холодное железо']];
+const GEMS={
+  ruby:{name:'Рубин',pow:'пламя',w:'с рубином',cost:8,col:'#d0453f'},
+  sapphire:{name:'Сапфир',pow:'стужа',w:'с сапфиром',cost:8,col:'#4f7fd6'},
+  emerald:{name:'Изумруд',pow:'выносливость',w:'с изумрудом',cost:8,col:'#4fae6a'},
+  moon:{name:'Лунный камень',pow:'свет',w:'с лунным камнем',cost:12,up:'jewel1',col:'#e8ecff'},
+  amethyst:{name:'Аметист',pow:'тень и тишина',w:'с аметистом',cost:12,up:'jewel1',col:'#9a5fd0'},
+  amber:{name:'Янтарь',pow:'тепло',w:'с янтарём',cost:12,up:'jewel1',col:'#e0962f'},
+  topaz:{name:'Топаз',pow:'соколиный глаз',w:'с топазом',cost:16,up:'jewel2',col:'#e8d85a'},
+  diamond:{name:'Алмаз',pow:'оберег от чар',w:'с алмазом',cost:20,up:'jewel2',col:'#ffffff'},
+};
+const RACES={
+  human:{m:'человек',f:'человек',skin:'#c9a07a',hair:'#4a3426',tw:12,th:15,lh:13,hw:10,hh:10,hi:'Доброго дня, мастер.',
+    mn:['Бранд','Освальд','Тибо','Гарет'],fn:['Ровена','Ильза','Марта','Эдит']},
+  dwarf:{m:'гном',f:'гномка',skin:'#c48a6a',hair:'#a0522d',tw:14,th:11,lh:6,hw:11,hh:10,hi:'Крепкого молота, лавочник!',
+    mn:['Торгрим','Балин Рыжий','Хрольф','Дурин Кривонос'],fn:['Хильда','Брунгильда','Дагна']},
+  elf:{m:'эльф',f:'эльфийка',skin:'#dccbb0',hair:'#d9c880',tw:10,th:16,lh:15,hw:9,hh:10,hi:'Да светят тебе звёзды, мастер.',
+    mn:['Лаэрин','Тавиэль','Эллемир'],fn:['Нимуэль','Сильвана','Иллариэ']},
+  orc:{m:'орк',f:'орчиха',skin:'#6f8f5a',hair:'#1c1820',tw:16,th:16,lh:12,hw:12,hh:11,hi:'Грр. Лавка. Хорошо.',
+    mn:['Грызь','Ургаш','Мрак-Зуб'],fn:['Шарга','Угла','Браха']},
+  halfling:{m:'полурослик',f:'полурослица',skin:'#d0a67c',hair:'#7a5230',tw:10,th:10,lh:6,hw:10,hh:9,hi:'Ой, здрасьте! А у вас тут уютно!',
+    mn:['Пип Подгорный','Тоби Лопух','Мило'],fn:['Рози','Лили Кочерыжка','Примула']},
+};
+const CLASSES={
+  warrior:{m:'воин',f:'воительница',col:'#7d7f8c',col2:'#5c5e6b',belt:'#4d3020'},
+  ranger:{m:'следопыт',f:'следопытка',col:'#4f6b45',col2:'#3a5033',belt:'#4d3020'},
+  mage:{m:'маг',f:'чародейка',col:'#5b3f8a',col2:'#452f6b',belt:'#c9a44c',robe:1},
+  rogue:{m:'плут',f:'плутовка',col:'#2b2633',col2:'#1f1b26',belt:'#55426e'},
+  priest:{m:'жрец',f:'жрица',col:'#cfc6ad',col2:'#a89f88',belt:'#c9a44c',robe:1},
+};
+const TRAITS={
+  onearm:{chip:'одна рука',say:'Рука у меня, как видишь, одна — вторую оставил{|а} мантикоре на память.'},
+  oneeye:{chip:'один глаз',say:'Глаз у меня один, так что с прицелом беда.'},
+  pegleg:{chip:'деревянная нога',say:'И учти: нога у меня деревянная. Скрипит, но держит.'},
+};
+// mat rules: [test, score, text]; gems: id -> [score, text]; types: 0..3 fit
+const QUESTS={
+  troll:{tier:0,pay:40,title:'Одолеть ледяного тролля',
+    ask:'На Синем перевале засел ледяной тролль и берёт дань сосульками. Иду его проучить.',
+    hint:'Шкура у него как промёрзшая скала — хлипкое сломается. И холода он не боится, сам из него сделан.',
+    types:{axe:3,hammer:3,sword:2,spear:2,staff:2,bow:1,dagger:1,shield:1},
+    mat:[[m=>m.str>=2,2,'выдержал удары о ледяную шкуру'],[m=>m.str===3,1,'крошил лёд, как сухари'],[m=>m.brittle,-2,'раскололся о ледяную шкуру'],[m=>m.str<2&&!m.brittle,-1,'погнулся о ледяную шкуру']],
+    gems:{ruby:[3,'пламя растопило тролля до лужи'],amber:[2,'тепло не дало замёрзнуть в бою'],sapphire:[-2,'стужа тролля только развеселила']},
+    out:['Тролль растаял до размеров снеговика и теперь сторожит перевал за морковку.','Тролль побит и ушёл выше в горы, дань отменена.','Тролль и герой разошлись вничью. Дань снижена до одной сосульки.','Тролль отобрал снаряжение и слепил из героя снежную бабу. Оттаял{|а} к вечеру.']},
+  mountain:{tier:0,pay:40,title:'Взойти на пик Ледяной Клык',
+    ask:'Хочу взойти на Ледяной Клык и водрузить там флаг своей деревни.',
+    hint:'Драться там не с кем — лезть придётся целый день, цепляясь за камни, а пальцы к скале примерзают.',
+    types:{gloves:3,boots:3,staff:1},
+    mat:[[m=>m.comfy,2,'сидит как влитой, ничего не натёр'],[m=>m.light>=2,1,'лёгкий, не тянул вниз'],[m=>m.light===0,-2,'тяжесть тянула в пропасть'],[m=>m.cls==='metal',-1,'металл на морозе примерзал к коже']],
+    gems:{emerald:[3,'выносливости хватило до самой вершины'],amber:[3,'тепло грело пальцы на ледяной стене'],sapphire:[-1,'стужи там и без того хватало'],ruby:[1,'огонёк немного грел, но подпалил верёвку']},
+    out:['Флаг реет на вершине! Говорят, его видно аж из столицы.','Вершина взята. Флаг, правда, сдуло, но свидетели есть.','Дошёл{|ла} до половины и повернул{|а} назад. Зато вид был красивый.','Сполз{|ла} с первого же уступа и неделю пил{|а} горячий сбитень в трактире.']},
+  wolves:{tier:0,pay:35,title:'Отогнать волчью стаю',
+    ask:'Волки повадились таскать овец у деревни Малые Броды. Надо отвадить.',
+    hint:'Их много, и они быстрые — близко лучше не подпускать. А огня зверьё боится пуще всего.',
+    types:{bow:3,spear:3,sword:2,axe:2,shield:2,staff:2,dagger:1,hammer:1},
+    mat:[[m=>m.light>=2,2,'лёгкий, поспевал за стаей'],[m=>m.str>=2,1,'крепкий, выдержал волчьи зубы'],[m=>m.light===0,-1,'слишком тяжёлый для такой беготни']],
+    gems:{ruby:[3,'волки бежали от пламени, поджав хвосты'],moon:[2,'свет в ночи слепил стаю'],topaz:[2,'ни одной стрелы мимо'],amethyst:[-1,'в тени волки видят лучше']},
+    out:['Стая ушла за реку, а вожак теперь стережёт овец за миску похлёбки.','Волки отступили в лес. Овцы целы, пастух счастлив.','Волков отогнал{|а}, но пару овец недосчитались.','Волки загнали героя на дерево. Просидел{|а} там до утра.']},
+  courier:{tier:0,pay:35,title:'Доставить письмо через Долгую степь',
+    ask:'Нужно за три дня донести письмо королевы через всю Долгую степь. Пешком.',
+    hint:'Врагов там нет, только дорога, дорога и ещё раз дорога. Лишь бы ноги не стёрлись.',
+    types:{boots:3,staff:2,amulet:1},
+    mat:[[m=>m.comfy,2,'ни одной мозоли за три дня'],[m=>m.light>=2,1,'лёгкий, шагалось легко'],[m=>m.light===0,-2,'такая тяжесть — к вечеру ноги гудели'],[m=>m.cls==='metal'&&m.light>0,-1,'натёр и гремел всю дорогу']],
+    gems:{emerald:[3,'сил хватило шагать день и ночь'],amber:[1,'ночами в степи было тепло'],topaz:[1,'издалека высматривал{|а} дорогу']},
+    out:['Письмо доставлено на день раньше! Королева пожаловала гонцу орден Быстрой Пятки.','Письмо доставлено в срок, печать цела.','Опоздал{|а} на день. Королева вздохнула, но письмо прочла.','Заблудил{|ся|ась} и вернул{|ся|ась} с письмом обратно.']},
+  salamander:{tier:1,pay:70,title:'Изловить огненную саламандру',
+    ask:'В горн графского кузнеца заползла огненная саламандра. Надо вытащить её голыми… ну, почти голыми руками.',
+    hint:'Она горячая, как сам горн. Бить её не надо — надо ухватить и не отпустить.',
+    types:{gloves:3,shield:1,staff:1},
+    mat:[[m=>m.fire,3,'не боится жара — держал саламандру крепко'],[m=>m.burn,-3,'вспыхнул в первую же секунду'],[m=>!m.fire&&!m.burn,-1,'раскалился и жёг руки']],
+    gems:{sapphire:[3,'стужа остудила горячую гостью'],ruby:[-2,'саламандра обрадовалась огню и подросла'],emerald:[1,'ловить пришлось долго, сил хватило']},
+    out:['Саламандра поймана и пристроена в графский камин — теперь там всегда тепло.','Саламандра выдворена из горна. Кузнец снова при деле.','Саламандра убежала сама, утащив кочергу.','Саламандра осталась в горне, а герой — без бровей.']},
+  dragon:{tier:1,pay:80,title:'Сразить дракона Пепельного ущелья',
+    ask:'Иду на дракона в Пепельное ущелье. Да-да, на настоящего.',
+    hint:'Он дышит огнём так, что камни плавятся — всё, что горит, сгорит. Близко к пасти лучше не подходить, а ещё лучше — за чем-нибудь спрятаться.',
+    types:{spear:3,shield:3,sword:2,bow:2,axe:2,staff:2,hammer:1,amulet:1},
+    mat:[[m=>m.fire,2,'не боится драконьего пламени'],[m=>m.burn,-3,'сгорел дотла от первого же выдоха'],[m=>m.str>=2,1,'пробил чешую'],[m=>!m.fire&&!m.burn,-1,'раскалился докрасна, едва удержал{|а}']],
+    gems:{sapphire:[3,'стужа гасила драконье пламя'],diamond:[2,'оберег отвёл драконий морок'],ruby:[-2,'дракон лишь зевнул на этот огонёк']},
+    out:['Дракон повержен… точнее, сдался и теперь топит городские бани. Баллады уже пишут!','Дракон изгнан из ущелья. Улетел, обиженно пыхтя.','Дракон отвлёкся, герой унёс ноги и одну чешуйку на память.','Дракон подпалил герою плащ и долго смеялся вслед.']},
+  barrow:{tier:1,pay:75,title:'Упокоить мертвецов Старого кургана',
+    ask:'В Старом кургане по ночам встают мертвецы и гремят костями. Соседи жалуются. Иду упокоить.',
+    hint:'Там темно, как в бочке. Кости лучше дробить, чем колоть. И старики говорят, нежить не выносит чистого металла.',
+    types:{hammer:3,sword:2,staff:2,amulet:2,shield:2,axe:2,spear:1,dagger:1},
+    mat:[[m=>m.holy,3,'нежить рассыпалась от одного касания'],[m=>m.str>=2&&!m.holy,1,'крепкий, кости дробил исправно']],
+    gems:{moon:[3,'свет разогнал могильную тьму'],ruby:[2,'пламя жгло сухие кости'],amethyst:[-1,'тени мертвецам только в радость'],diamond:[1,'оберег хранил от могильного шёпота']},
+    out:['Мертвецы упокоены, а самый вежливый скелет нанялся сторожем на кладбище.','Курган затих. Соседи спят спокойно.','Половина мертвецов улеглась, вторая обещала греметь потише.','Мертвецы выгнали героя и гремели всю ночь ему вслед.']},
+  heist:{tier:1,pay:75,title:'Вернуть корону из замка самозванца',
+    ask:'Барон-самозванец стащил корону и запер в своей башне. Надо тихо войти, взять и тихо выйти.',
+    hint:'Стражи там сотня, так что драться — дело гиблое. Главное — ни звука и ни огонька.',
+    types:{dagger:3,boots:3,gloves:2,amulet:2},
+    mat:[[m=>m.quiet,2,'ни скрипа, ни звона'],[m=>m.light>=2,1,'лёгкий, не мешал карабкаться'],[m=>m.light===0,-2,'грохот перебудил всю стражу'],[m=>m.cls==='metal'&&!m.quiet,-1,'звякнул в самый неподходящий миг']],
+    gems:{amethyst:[3,'тень укрыла от сотни глаз'],moon:[-2,'сиял на весь замок, как маяк'],ruby:[-2,'огонёк выдал с головой'],topaz:[1,'помог разглядеть ловушки']},
+    out:['Корона возвращена, а барон до сих пор ищет её под кроватью.','Корона возвращена. Пришлось, правда, уходить через ров.','Корону не достал{|а}, зато унёс{|ла} баронскую печать.','Стража поймала героя и заставила чистить конюшни.']},
+  swamp:{tier:1,pay:75,title:'Усмирить ведьму Гнилой топи',
+    ask:'Ведьма Гнилой топи наводит порчу на репу. Иду поговорить с ней по душам.',
+    hint:'Там по колено воды — всё ржавеет и гниёт за день. А ведьма морочит голову чарами и туманом.',
+    types:{boots:3,amulet:3,staff:2,spear:2,sword:1,dagger:1,shield:1},
+    mat:[[m=>m.norust,2,'болотная сырость ему нипочём'],[m=>m.rust,-2,'проржавел насквозь за день'],[m=>m===MATS.leather,-1,'размокла в болотной жиже'],[m=>m.burn,-1,'разбух от сырости']],
+    gems:{diamond:[3,'оберег отразил все ведьмины чары'],moon:[2,'свет рассеял морок и туман'],emerald:[1,'хватило сил брести по трясине']},
+    out:['Ведьма сняла порчу и теперь варит лучшее в округе варенье из морошки.','Ведьма пообещала оставить репу в покое.','Порча снята наполовину: репа растёт, но квадратная.','Ведьма превратила героя в жабу. К утру прошло.']},
+  stag:{tier:2,pay:130,title:'Добыть волос Белого оленя',
+    ask:'Королевскому лекарю нужен волос из хвоста Белого оленя. Убивать нельзя — только срезать стрелой один волос.',
+    hint:'Олень слышит треск ветки за версту и не подпустит ближе ста шагов. И упаси лес от огня!',
+    types:{bow:3,spear:1,dagger:1,boots:2},
+    mat:[[m=>m.quiet,2,'ни шороха в лесной тиши'],[m=>m.arc>=2,1,'чары вели стрелу'],[m=>m.light===0,-2,'слишком тяжёл для засады']],
+    gems:{topaz:[3,'стрела срезала ровно один волос'],amethyst:[2,'тень скрыла охотника'],ruby:[-3,'едва не спалил{|а} Древний лес']},
+    out:['Волос добыт, а олень даже не заметил. Лекарь в восторге.','Волос добыт. Олень обиделся, но цел.','Срезал{|а} не волос, а кисточку с собственной шапки. Олень ушёл.','Олень сам подкрался сзади и боднул героя в ручей.']},
+  golem:{tier:2,pay:130,title:'Разбить голема Гномьих копей',
+    ask:'В Гномьих копях ожил каменный голем и не пускает рудокопов. Иду разбираться.',
+    hint:'Он из цельного гранита — лезвия отскакивают, тут надо крошить. И темно там, хоть глаз выколи.',
+    types:{hammer:3,shield:2,staff:2,axe:1,amulet:1},
+    mat:[[m=>m.str===3,3,'крошил гранит, как чёрствый хлеб'],[m=>m.str===2,1,'держался, хоть и покрылся зазубринами'],[m=>m.brittle,-2,'разлетелся вдребезги о гранит'],[m=>m.str<2&&!m.brittle,-1,'смялся о гранит']],
+    gems:{moon:[3,'свет озарил копи до самого дна'],emerald:[2,'сил хватило махать до победы'],diamond:[1,'оберег ослабил чары голема']},
+    out:['Голем разобран на аккуратные кирпичи. Гномы строят из них пивоварню.','Голем загнан в дальний штрек и замурован.','Голем потерял руку и стал сговорчивее: пускает по вторникам.','Голем вынес героя из копей и аккуратно поставил у входа.']},
+  tourney:{tier:2,pay:130,title:'Победить на Турнире чародеев',cls:['mage'],
+    ask:'Еду на Турнир чародеев в Башню Семи Ветров. Мне нужен проводник для чар, лучший из лучших.',
+    hint:'Железки там бесполезны. Важно, чтобы вещь пела от магии, — и чтобы чужие заклятья отскакивали.',
+    types:{staff:3,amulet:3},
+    mat:[[m=>m.arc===3,3,'пел от магии, как струна'],[m=>m.arc===2,2,'исправно проводил чары'],[m=>m.arc===0,-2,'глух к магии, как полено']],
+    gems:{diamond:[3,'чужие заклятья отскакивали, как горох'],ruby:[2,'огненный шар впечатлил судей'],sapphire:[2,'ледяная буря впечатлила судей'],topaz:[1,'чары летели точно в цель']},
+    out:['Первое место и звание Архимага года! Ваше клеймо показывали судьям.','Призовое место и мешок волшебных бобов.','Выбыл{|а} во втором круге, но сорвал{|а} аплодисменты.','Собственное заклятье превратило шляпу в гуся. Гусь улетел.']},
+  serpent:{tier:2,pay:135,title:'Прогнать морского змея',
+    ask:'У Солёных скал завёлся морской змей, рвёт сети и пугает рыбаков. Выхожу в море на лодке.',
+    hint:'Солёная вода съедает простое железо за неделю. Огонь и стужа в море без толку, а бить надо издали и точно в глаз.',
+    types:{spear:3,bow:2,sword:2,axe:2,shield:2,staff:1},
+    mat:[[m=>m.norust,2,'соль и вода ему нипочём'],[m=>m.rust,-3,'рассыпался ржавой трухой'],[m=>m.str>=2,1,'пробил змеиную шкуру']],
+    gems:{topaz:[3,'удар пришёлся точно змею в глаз'],emerald:[2,'сил хватило грести и биться до заката'],ruby:[-2,'пламя зашипело и погасло в волнах'],sapphire:[-1,'стужа лишь приморозила вёсла']},
+    out:['Змей уплыл в тёплые моря и прислал оттуда открытку. Рыбаки ликуют!','Змей ушёл на глубину. Сети целы.','Змей утащил лодку, но рыбаков больше не трогает — играет с лодкой.','Змей окатил героя волной и уплыл хохоча.']},
+};
+// quests with a wink to well-known fantasy
+Object.assign(QUESTS,{
+  striga:{tier:1,pay:80,title:'Расколдовать княжну-упырицу',
+    ask:'Князь платит чеканной монетой тому, кто расколдует его дочь. Днём она спит в склепе, а ночью… кусается.',
+    hint:'Убивать нельзя — надо продержаться рядом с ней до третьих петухов. Бывалые охотники говорят: на чудовищ — серебро, на людей — сталь. И проклятье там сильное.',
+    types:{sword:3,dagger:2,shield:2,amulet:2,spear:2,staff:1,hammer:1},
+    mat:[[m=>m.holy,3,'упырица шарахалась от него, как от солнца'],[m=>m.brittle,-1,'раскололся о когти упырицы']],
+    gems:{diamond:[3,'оберег выдержал княжеское проклятье'],moon:[2,'свет держал упырицу на расстоянии'],emerald:[2,'сил хватило продержаться до петухов'],ruby:[-1,'княжну жечь нельзя — князь не заплатит']},
+    out:['Третьи петухи пропели — в склепе сидит заспанная княжна и требует завтрак. Князь заплатил и накинул сверху.','Проклятье снято. Княжна пока шипит на гостей, но это, говорят, возрастное.','До петухов дотянул{|а}, сидя на крышке гроба. Княжна расколдована наполовину: кусается по чётным дням.','Упырица гоняла героя по склепу до рассвета. Князь ищет другого охотника.']},
+  rabbit:{tier:1,pay:70,title:'Прогнать кролика-убийцу',
+    ask:'У пещеры на Кривом холме поселился кролик. Белый, пушистый. Трёх рыцарей уже увезли на телеге.',
+    hint:'Не смейся — у него вот такие зубищи, и прыгает он на десять шагов! Близко не подходи. Монахи говорят, тварь боится всего святого — главное, досчитать до трёх.',
+    types:{bow:3,shield:3,spear:2,hammer:1,sword:1,staff:1},
+    mat:[[m=>m.holy,2,'святой металл кролик на дух не выносит'],[m=>m.light>=2,1,'лёгкий — удавалось уворачиваться от прыжков']],
+    gems:{moon:[3,'святой свет ослепил зверюгу на счёт «три»'],topaz:[2,'второй попытки кролик бы не дал'],emerald:[2,'хватило сил бегать от него кругами'],amethyst:[-1,'кролик в темноте видит отлично']},
+    out:['Кролик посрамлён и переселён на капустное поле. Рыцари требуют записать, что он был «ужасно страшный».','Кролик ускакал в пещеру и носа не кажет.','Кролик отгрыз кусок плаща и ушёл сам — наелся.','Герой бежал с криком «Спасайся кто может!». Кролик даже не запыхался.']},
+  spider:{tier:1,pay:75,title:'Пройти логово гигантской паучихи',
+    ask:'Короткая дорога через перевал идёт туннелем, а в туннеле живёт паучиха размером с амбар.',
+    hint:'Там тьма кромешная и паутина толщиной с канат — её надо резать. А света старуха не выносит: сто лет на солнце не вылезала.',
+    types:{sword:3,dagger:3,staff:2,amulet:2,axe:1,spear:1},
+    mat:[[m=>m.str>=2,1,'резал паутину, как нитки'],[m=>m.light>=2,1,'лёгкий — не увяз в паутине'],[m=>m.light===0,-1,'тяжёлый — прилип к паутине намертво']],
+    gems:{moon:[3,'паучиха пятилась от света, шипя'],ruby:[2,'пламя жгло паутину'],amethyst:[-2,'тьмы там хватало и без того']},
+    out:['Туннель пройден! Паучиха забилась в угол и теперь плетёт на продажу отличные сети.','Туннель пройден, хоть и пришлось оставить в паутине один сапог.','Прорубил{ся|ась} до середины и вернул{ся|ась}. Зато дорогу расчистил{|а}.','Герой провисел в коконе до вечера, пока паучиха не решила, что он{|а} невкусн{ый|ая}.']},
+  ring:{tier:2,pay:140,title:'Отнести проклятое колечко к Огненной горе',
+    ask:'Досталось мне от дядюшки одно колечко. Простенькое, золотое. Мудрецы велят бросить его в жерло Огненной горы — и чем скорее, тем лучше.',
+    hint:'Идти туда — не просто взять и дойти: месяцы пешком, по камням и пеплу. И главное — не попасться на глаза тому, кто это колечко ищет. Его Око чует огонь и блеск издалека.',
+    types:{boots:3,amulet:2,staff:2,gloves:1},
+    mat:[[m=>m.comfy,1,'не натёр за всю дорогу'],[m=>m.quiet,1,'ни звука на вражеской земле'],[m=>m.light>=2,1,'лёгкий — ноша и так тяжела'],[m=>m.light===0,-2,'с такой тяжестью далеко не уйдёшь']],
+    gems:{emerald:[3,'сил хватило до самого жерла'],amethyst:[3,'тень укрыла от Ока'],moon:[1,'свет выручил в тёмных местах'],ruby:[-2,'Око сразу почуяло огонь']},
+    out:['Колечко в жерле, гора отгремела. Обратно героя подвезли орлы — могли бы, кстати, и туда.','Колечко брошено в жерло. Пальцы, правда, пересчитывали дважды.','До горы дош{ёл|ла}, но бросить не смог{|ла}: «оно такое красивое». Уговаривают.','Заблудил{ся|ась} в болотах на второй день. Колечко пока лежит в сахарнице.']},
+  wall:{tier:2,pay:135,title:'Отстоять ночь на Ледяной Стене',
+    ask:'Дозорные на Ледяной Стене зовут добровольцев. Зима, говорят, близко — а с ней идут те, что ходят в метели.',
+    hint:'Простая сталь их не берёт, рассыпается от холода. Старые няньки сказывают: ходоки боятся огня да чёрного стекла из вулкана. И стужа там такая, что слова замерзают.',
+    types:{dagger:3,spear:3,sword:2,bow:2,shield:2,axe:1},
+    mat:[[m=>m===MATS.obsidian,3,'ходоки рассыпались в иней от одного касания'],[m=>m.fire&&m!==MATS.obsidian,1,'рождён в огне — на морозе не лопнул'],[m=>!m.fire,-1,'на таком морозе стал хрупким, как сосулька']],
+    gems:{ruby:[3,'пламя гнало ходоков прочь'],amber:[3,'тепло спасало на ледяном ветру'],sapphire:[-2,'стужи ходокам только подавай']},
+    out:['Стена выстояла, ходоки ушли в метель. Дозорные жалуют герою чёрный плащ и горячий суп пожизненно.','Ночь отстояли. К утру у героя замёрзли даже мысли, но Стена цела.','Ходоков сдержали, но половину ночи герой грел{ся|ась} у чужого костра.','Герой примёрз к Стене на первом же обходе. Отогревали всем дозором.']},
+  bridge:{tier:2,pay:140,title:'Не пустить огненного демона через мост',
+    ask:'В глубине Гномьих копей проснулось нечто из пламени и тени. Между ним и выходом — один узкий мост. На нём я и встану.',
+    hint:'Он весь огонь, и бич у него огненный — всё, что горит, сгорит. Сражаться бесполезно: нужно встать твёрдо, ударить чарами и сказать, что он не пройдёт.',
+    types:{staff:3,shield:2,sword:2,amulet:1},
+    mat:[[m=>m.fire,2,'не дрогнул в демоновом пламени'],[m=>m.burn,-3,'вспыхнул, как лучина'],[m=>m.arc>=2,1,'чары прогремели на все копи']],
+    gems:{sapphire:[3,'стужа сбила пламя демона'],diamond:[2,'оберег выдержал удар бича'],moon:[2,'белый свет разогнал тень'],ruby:[-2,'огня демону не занимать']},
+    out:['«Ты не пройдёшь!» — и он не прошёл. Мост цел, герой цел{|а}, а гномы требуют повторить на бис.','Демон отступил в глубину. Мост, правда, придётся чинить.','Демон не прошёл, но и герой тоже: стоят на разных концах моста и переругиваются.','Демон прошёл. Вежливо извинился и пошёл дальше по своим делам.']},
+});
+// titles, deeds, artifact names and trophies
+const QX={
+  troll:{tt:'Гроза Троллей'},mountain:{tt:'Покорител{ь|ьница} Вершин'},wolves:{tt:'{Друг|Подруга} Волков'},courier:{tt:'Быстрая Пятка'},
+  salamander:{tt:'Огненная Рука',deed:'изловил{|а} огненную саламандру в графском горне',art:['Хватка Стужи','Укротитель Жара'],trophy:['Шкурка саламандры','Саламандра сбросила старую кожу и оставила в подарок. До сих пор тёплая.']},
+  dragon:{tt:'Драконобор{ец|ица}',deed:'усмирил{|а} дракона Пепельного ущелья',art:['Гаситель Пламени','Драконья Колыбельная'],trophy:['Голова дракона','Дракон сам слепил её из глины и вручил победителю: «Вешайте, мне не жалко». Вышло очень похоже.']},
+  barrow:{tt:'Гроза Курганов',deed:'упокоил{|а} мертвецов Старого кургана',art:['Упокоитель','Последний Колокол'],trophy:['Корона курганного короля','Скелет-сторож прислал её с запиской: «Мне она всё равно велика».']},
+  heist:{tt:'Тень Короны',deed:'вернул{|а} корону из башни самозванца',art:['Шёпот Полуночи','Ничья Тень'],trophy:['Баронская печать','Прихвачена из башни самозванца заодно с короной.']},
+  swamp:{tt:'Укротител{ь|ьница} Ведьм',deed:'усмирил{|а} ведьму Гнилой топи',art:['Разгонитель Морока','Болотный Светоч'],trophy:['Ведьмин котелок','Подарок ведьмы. Варенье в нём никогда не пригорает.']},
+  stag:{tt:'Соколиный Глаз',deed:'добыл{|а} волос Белого оленя, не тронув зверя',art:['Один Волос','Тихий Выстрел'],trophy:['Волос Белого оленя','Второй волос — лекарю хватило одного. Светится в темноте.']},
+  golem:{tt:'Камнелом',deed:'разбил{|а} голема Гномьих копей',art:['Гранитная Крошка','Конец Гранита'],trophy:['Сердце голема','Камень, что бился в груди голема. Иногда ещё постукивает.']},
+  tourney:{tt:'Архимаг Года',deed:'победил{|а} на Турнире чародеев',art:['Семь Ветров','Последнее Слово'],trophy:['Кубок Турнира чародеев','Победитель оставил его мастеру: «Половина победы — ваша».']},
+  serpent:{tt:'Гроза Морей',deed:'прогнал{|а} морского змея от Солёных скал',art:['Змеиный Глаз','Солёная Правда'],trophy:['Чешуя морского змея','Змей обронил её, уплывая в тёплые моря. Величиной с блюдо.']},
+  striga:{tt:'Снимател{ь|ьница} Проклятий',deed:'расколдовал{|а} княжну-упырицу',art:['Третий Петух','Серебряная Ночь'],trophy:['Княжеский гребень','Расколдованная княжна прислала с благодарностью. И просила впредь не будить так рано.']},
+  rabbit:{tt:'Гроза Кроликов',deed:'прогнал{|а} кролика-убийцу с Кривого холма',art:['Раз, Два, Три','Святая Оборона'],trophy:['Клок белой шерсти','Всё, что удалось добыть. Кролик цел и очень недоволен.']},
+  spider:{tt:'Гроза Пауков',deed:'прош{ёл|ла} логово гигантской паучихи',art:['Кусачка','Свет во Тьме'],trophy:['Моток паучьего шёлка','Паучиха отдала сама — лишь бы свет убрали.']},
+  ring:{tt:'Хранител{ь|ьница} Колечка',deed:'дон{ёс|есла} проклятое колечко до Огненной горы',art:['Туда и Обратно','Девять Пальцев'],trophy:['Орлиное перо','Обронил орёл, что подвёз героя обратно. Величиной с весло.']},
+  wall:{tt:'Дозорн{ый|ая} Стены',deed:'отстоял{|а} ночь на Ледяной Стене',art:['Долгая Ночь','Зимний Дозор'],trophy:['Ледяной клинок ходока','Не тает. Очень удобно охлаждать квас.']},
+  bridge:{tt:'Страж Моста',deed:'не пустил{|а} огненного демона через мост',art:['Ты Не Пройдёшь','Мостовая Пошлина'],trophy:['Огненный бич','Демон обронил, отступая. Отлично разжигает камин.']},
+};
+for(const k in QX)Object.assign(QUESTS[k],QX[k]);
+const BACKHI=[
+  h=>h.title?`Мастер, это снова я! После дела «${QUESTS[h.last.q].title}» меня величают не иначе как ${full(h)}. Без твоей вещи не вышло бы!`:`Мастер, это снова я! Дело «${QUESTS[h.last.q].title}» вышло на славу — без твоей вещи никак.`,
+  h=>`Здравствуй, мастер, я снова к тебе. То дело — «${QUESTS[h.last.q].title}» — выгорело, твоя работа не подвела.`,
+  h=>`Это опять я. Дело «${QUESTS[h.last.q].title}» вышло… так себе. Но я не в обиде — попробуем ещё раз.`,
+  h=>`Да, это снова я. Про «${QUESTS[h.last.q].title}» лучше не спрашивай. Даю тебе ещё один шанс, мастер.`,
+];
+const full=h=>h.name+(h.title?' '+h.title:'');
+const SLOTS=[[50,10],[78,10],[152,8],[178,6],[204,6],[230,6]];
+const UPS=[
+  {id:'smelter',g:'Мастерская',name:'Гномья плавильня',cost:60,desc:'Новые металлы: серебро и чёрная сталь.'},
+  {id:'jewel1',g:'Мастерская',name:'Шкатулка ювелира',cost:70,desc:'Новые камни: лунный камень, аметист, янтарь.'},
+  {id:'plans',g:'Мастерская',name:'Старые чертежи',cost:80,desc:'Новые изделия: копьё, щит и амулет.'},
+  {id:'anvil1',g:'Мастерская',name:'Наковальня с клеймом',cost:90,desc:'Попадать молотом в цель становится легче.'},
+  {id:'curio',g:'Мастерская',name:'Склад диковин',cost:150,req:'smelter',desc:'Старый тис, обсидиан и кожа саламандры.'},
+  {id:'jewel2',g:'Мастерская',name:'Гранильный станок',cost:170,req:'jewel1',desc:'Новые камни: топаз и алмаз.'},
+  {id:'anvil2',g:'Мастерская',name:'Меха-самодувы',cost:200,req:'anvil1',desc:'Ковать ещё легче, мастерская работа выходит чаще.'},
+  {id:'vein',g:'Мастерская',name:'Мифриловая жила',cost:320,req:'curio',desc:'Мифрил, драконья кость и лунный шёлк.'},
+  {id:'sign',g:'Лавка',name:'Кованая вывеска',cost:50,desc:'Лавку видно с тракта: +1 посетитель в день.'},
+  {id:'carpet',g:'Лавка',name:'Ковёр и свечи',cost:90,desc:'В уюте герои щедрее: +20% к плате за успех.'},
+  {id:'cat',g:'Лавка',name:'Лавочный кот',cost:110,desc:'Шипит, если вещь не подходит самому герою.'},
+  {id:'hearth',g:'Лавка',name:'Камин',cost:160,req:'sign',desc:'К огню тянутся путники: ещё +1 посетитель.'},
+];
+const TH=[10,7,4], OUT=['Триумф','Успех','Еле-еле','Провал'], MULT=[1.5,1,0.4,0.1], FAME=[2,1,0,0], TIERFAME=[0,5,14];
+
+/* ================= RULES ================= */
+const gt=(s,h)=>s.replace(/\{([^|}]*)\|([^}]*)\}/g,(_,a,b)=>h.f?b:a);
+const has=id=>!id||!!S.ups[id];
+function heroMods(h,it,T,M,add){
+  const t=it.type, R=RACES[h.race][h.f?'f':'m'], C=CLASSES[h.cls][h.f?'f':'m'], ok=T.cls.includes(M.cls);
+  // race
+  if(h.race==='elf'){ if(M.iron)add(-2,'Холодное железо жгло эльфийские ладони',1); if(M.light===3&&ok)add(1,'Невесомая вещь — эльфу по душе',1); if(t==='bow')add(1,'Лук в эльфийских руках поёт',1); }
+  if(h.race==='dwarf'){ if(t==='bow')add(-2,'Гномьи руки коротки для тетивы',1); if(t==='hammer'||t==='axe')add(1,'Гном с такой вещью — как рыба в воде',1); }
+  if(h.race==='orc'){ if(t==='dagger'||t==='amulet')add(-1,'В орочьей лапе это как зубочистка',1); if(M.brittle)add(-2,'Орочья сила раскрошила хрупкую вещь',1); else if(M.str===3&&ok)add(1,'Наконец-то вещь, которую орк не сломал',1); }
+  if(h.race==='halfling'){ if(T.two||t==='hammer')add(-2,'Вещь оказалась больше самого полурослика',1); if(M.light===0)add(-1,'Полурослик едва волок такую тяжесть',1); if(t==='dagger'||t==='boots')add(1,'Маленькая ловкая вещь — в самый раз',1); }
+  // class
+  const pro={warrior:['sword','axe','spear','hammer','shield'],ranger:['bow','dagger','spear','boots'],mage:['staff','amulet'],rogue:['dagger','boots','gloves'],priest:['hammer','staff','shield','amulet']}[h.cls];
+  const con={warrior:['staff','amulet'],ranger:['hammer'],mage:['axe','hammer','spear','sword','shield'],rogue:['shield','hammer','axe'],priest:['sword','dagger','axe','spear','bow']}[h.cls];
+  const why={warrior:'не знает, с какой стороны за это браться',ranger:'привык бить издали, а не махать кувалдой',mage:'едва поднимает такое — и колдовать с этим нельзя',rogue:'с такой громадиной в тень не спрячешься',priest:'дал{|а} обет не проливать кровь остриём'}[h.cls];
+  if(pro.includes(t))add(1,cap(C)+' знает толк в таких вещах',1);
+  if(con.includes(t))add(h.cls==='warrior'||h.cls==='ranger'?-1:-2,cap(C)+' '+gt(why,h),1);
+  if(h.cls==='mage'&&ok){ if(M.arc>=2)add(1,M.name+' хорошо проводит чары мага',1); if(M.arc===0)add(-1,M.name+' глух к чарам мага',1); }
+  if(h.cls==='rogue'&&M.light===0)add(-1,'Плуту такая тяжесть ни к чему',1);
+  if(h.cls==='priest'&&M.holy&&ok)add(1,'Святой металл укрепил веру',1);
+  // body
+  if(h.trait==='onearm'){ if(T.two)add(-3,'Одной рукой с двуручной вещью не управиться',1); if(t==='gloves')add(-1,'Вторая перчатка осталась без дела',1); }
+  if(h.trait==='oneeye'&&t==='bow'){ if(it.gem==='topaz')add(0,'Соколиный глаз возместил недостающий',1); else add(-2,'С одним глазом стрелы летели куда угодно',1); }
+  if(h.trait==='pegleg'&&t==='boots')add(-2,'Сапог пригодился лишь один — деревяшке обувь ни к чему',1);
+}
+function evaluate(h,q,it){
+  const T=TYPES[it.type],M=MATS[it.mat],G=it.gem?GEMS[it.gem]:null,n=[];let s=0;
+  const add=(v,t,hero)=>{s+=v;n.push({v,t:gt(t,h),hero:!!hero});};
+  const tf=q.types[it.type]||0;
+  add([-3,1,2,3][tf],T.name+': '+['в таком деле вещь совершенно бесполезная','толку в таком деле немного','годный выбор, хоть и не лучший','именно то, что нужно для такого дела'][tf]);
+  if(!T.cls.includes(M.cls))add(-3,T.name+' '+M.of+'? '+{metal:'Гремит, давит и гнётся не там, где надо',wood:'Щепки летели во все стороны',soft:'Обвис, как мокрая тряпка',stone:'Треснул при первом же деле',bone:'Вышло неудобно и страшновато'}[M.cls],1);
+  else if(tf>0)for(const [f,v,t] of q.mat)if(f(M))add(v,M.name+': '+t);
+  if(tf>0){
+    if(G){const g=q.gems[it.gem];if(g)add(g[0],G.name+': '+g[1]);else add(0,G.name+': красиво блестел, но в деле не пригодился');}
+    else if(Object.values(q.gems).some(g=>g[0]>=3))add(0,'Без камня чарам неоткуда было взяться');
+  }
+  heroMods(h,it,T,M,add);
+  add(it.q,['Ковка грубая — но держалось','Добротная ковка не подвела','Мастерская ковка — вещь сама шла в руку'][it.q]);
+  const tier=s>=TH[0]?0:s>=TH[1]?1:s>=TH[2]?2:3;
+  return {s,n,tier};
+}
+function best(h,q,all){
+  let b=-99;
+  for(const t in TYPES)if(all||has(TYPES[t].up))for(const m in MATS)if(all||has(MATS[m].up))for(const g of [null,...Object.keys(GEMS)])if(!g||all||has(GEMS[g].up)){
+    const s=evaluate(h,q,{type:t,mat:m,gem:g,q:1}).s;if(s>b)b=s;}
+  return b;
+}
+const rnd=a=>a[Math.random()*a.length|0], cap=s=>s[0].toUpperCase()+s.slice(1);
+function makeHero(usedQ,usedIds){
+  const tier=S.fame>=TIERFAME[2]?2:S.fame>=TIERFAME[1]?1:0;
+  let fallback=null;
+  for(let i=0;i<80;i++){
+    const qid=rnd(Object.keys(QUESTS).filter(k=>QUESTS[k].tier<=tier&&!usedQ.includes(k)&&(QUESTS[k].tier>=tier-1||Math.random()<.35)));
+    if(!qid)continue;
+    const q=QUESTS[qid];let h;
+    const pool=S.roster.filter(x=>!usedIds.includes(x.id)&&(!q.cls||q.cls.includes(x.cls)));
+    if(pool.length&&Math.random()<.4)h={...rnd(pool),quest:qid,back:true};
+    else{
+      const race=rnd(Object.keys(RACES)),cls=q.cls?rnd(q.cls):rnd(Object.keys(CLASSES)),f=Math.random()<.45;
+      const trait=Math.random()<.5?rnd(Object.keys(TRAITS)):null;
+      const names=RACES[race][f?'fn':'mn'].filter(n=>!S.roster.some(x=>x.name===n)&&!D0.includes(n));
+      if(!names.length)continue;
+      h={race,cls,f,trait,quest:qid,name:rnd(names)};
+    }
+    if(!fallback&&q.tier===0&&!h.back)fallback=h;
+    if(best(h,q,true)>=TH[0]&&best(h,q,false)>=TH[1]){fallback=h;break;}
+  }
+  const h=fallback||{race:'human',cls:'warrior',f:false,trait:null,quest:'troll',name:'Странник'};
+  if(!h.back)h.id=S.nextId++;
+  D0.push(h.name);return h;
+}
+let D0=[]; // names already used today
+
+/* ================= STATE ================= */
+const SAVE='rusty-griffin-v1';
+let S={day:1,gold:20,fame:0,ups:{},served:0,roster:[],relics:[],nextId:1};
+let D=null; // day runtime: {heroes, i, pending, pick, phase}
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(S));}catch(e){}}
+function load(){try{const j=JSON.parse(localStorage.getItem(SAVE));if(j&&j.day){S=j;S.roster||(S.roster=[]);S.relics||(S.relics=[]);S.nextId||(S.nextId=1);return true;}}catch(e){}return false;}
+const perDay=()=>3+(S.ups.sign?1:0)+(S.ups.hearth?1:0);
+const $=id=>document.getElementById(id);
+function stats(){
+  const hg=D&&D.hideGold||0,hf=D&&D.hideFame||0,f=S.fame-hf,nx=TIERFAME.find(x=>x>f);
+  $('sDay').textContent=S.day;$('sGold').textContent=S.gold-hg;$('sFame').textContent=nx?f+' / '+nx:f;
+  $('sFame').parentNode.title=nx?'При славе '+nx+' в лавку пойдут герои с подвигами опаснее и дороже':'О лавке слагают песни: приходят герои с самыми великими подвигами';
+}
+
+/* ================= PIXEL ART ================= */
+const scene=$('scene'),sx=scene.getContext('2d');
+let phase='title',hero=null,heroX=-30,heroTo=-30,heroGone=null;
+function R(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);}
+function glow(c,x,y,r,col,a){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=a;c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.globalAlpha=a*.6;c.beginPath();c.arc(x,y,r*.55,0,7);c.fill();c.restore();}
+function drawHero(c,cx,fy,h,bob){
+  const r=RACES[h.race],k=CLASSES[h.cls],P=(x,y,w,hh,col)=>R(c,x,y,w,hh,col);
+  const {lh,th,tw,hw,hh}=r,ty=fy-lh-th+bob,hy=ty-hh+1,tx=cx-(tw>>1),hx=cx-(hw>>1),ink='#0b0810';
+  const half=Math.ceil(lh/2);
+  // legs
+  P(cx-5,fy-lh,4,lh,'#352b3d');P(cx-6,fy-3,5,3,'#1f1717');
+  if(h.trait==='pegleg'){P(cx+1,fy-lh,4,half,'#352b3d');P(cx+2,fy-lh+half,2,lh-half,'#b08a55');}
+  else{P(cx+1,fy-lh,4,lh,'#352b3d');P(cx+1,fy-3,5,3,'#1f1717');}
+  // torso
+  P(tx,ty,tw,th,k.col);
+  if(k.robe)P(tx-1,ty+th-2,tw+2,Math.max(2,lh-4),k.col);
+  P(tx,ty+th-4,tw,2,k.belt);
+  if(h.cls==='warrior'){P(tx+1,ty+2,tw-2,1,'#9d9fac');P(tx+1,ty+5,tw-2,1,'#9d9fac');}
+  if(h.cls==='priest')P(cx-1,ty+2,2,6,'#c9a44c'),P(cx-3,ty+4,6,2,'#c9a44c');
+  // arms
+  P(tx-3,ty+1,3,th-3,k.col2);P(tx-3,ty+th-2,3,2,r.skin);
+  if(h.trait==='onearm'){P(tx+tw,ty+1,3,4,k.col2);P(tx+tw,ty+5,3,1,ink);}
+  else{P(tx+tw,ty+1,3,th-3,k.col2);P(tx+tw,ty+th-2,3,2,r.skin);}
+  // head
+  P(hx,hy,hw,hh,r.skin);P(hx,hy-1,hw,2,r.hair);
+  if(h.race==='elf'){P(hx-2,hy+2,2,3,r.skin);P(hx-3,hy+1,1,2,r.skin);P(hx+hw,hy+2,2,3,r.skin);P(hx+hw+2,hy+1,1,2,r.skin);if(h.f){P(hx-1,hy+1,1,9,r.hair);P(hx+hw,hy+5,1,5,r.hair);}}
+  if(h.race==='orc'){P(hx-2,hy+3,2,2,r.skin);P(hx+hw,hy+3,2,2,r.skin);P(hx+2,hy+hh-4,1,2,'#efe6cc');P(hx+hw-3,hy+hh-4,1,2,'#efe6cc');}
+  if(h.race==='halfling')P(hx-1,hy-2,hw+2,3,r.hair),P(hx-1,hy+1,1,2,r.hair),P(hx+hw,hy+1,1,2,r.hair);
+  if(h.race==='human'&&h.f)P(hx-1,hy,1,9,r.hair),P(hx+hw,hy,1,9,r.hair);
+  P(hx+2,hy+4,2,2,ink);P(hx+hw-4,hy+4,2,2,ink);
+  if(h.trait==='oneeye'){P(hx+hw-5,hy+3,4,4,ink);P(hx,hy+2,hw,1,ink);}
+  if(h.race==='dwarf'){ if(h.f){P(hx-1,hy+2,2,12,r.hair);P(hx+hw-1,hy+2,2,12,r.hair);} else {P(hx,hy+7,hw,7,r.hair);P(hx+2,hy+14,hw-4,2,r.hair);} }
+  // headgear
+  if(h.cls==='warrior'){P(hx-1,hy-2,hw+2,4,'#8d8f9c');P(hx-1,hy+2,1,4,'#8d8f9c');P(hx+hw,hy+2,1,4,'#8d8f9c');P(cx-1,hy-5,2,3,'#b0524a');}
+  if(h.cls==='ranger'||h.cls==='rogue'){P(hx-1,hy-2,hw+2,3,k.col);P(hx-1,hy,1,hh,k.col);P(hx+hw,hy,1,hh,k.col);P(cx-1,hy-3,2,1,k.col);}
+  if(h.cls==='rogue'&&!(h.race==='dwarf'&&!h.f))P(hx,hy+7,hw,3,'#17131c');
+  if(h.cls==='mage'){P(hx-3,hy-1,hw+6,2,k.col2);P(hx,hy-5,hw,4,k.col);P(hx+2,hy-9,hw-4,4,k.col);P(hx+4,hy-12,Math.max(2,hw-7),3,k.col);P(hx+1,hy-3,hw-2,1,'#c9a44c');}
+  if(h.cls==='priest'){P(hx-1,hy-2,hw+2,3,k.col);P(hx-1,hy,1,hh+2,k.col);P(hx+hw,hy,1,hh+2,k.col);P(cx-1,hy-2,2,2,'#c9a44c');}
+}
+function drawItem(c,ox,oy,type,mat,gem){
+  const m=MATS[mat],g=gem?GEMS[gem].col:null,w='#6b4a2f',P=(x,y,ww,hh,col)=>R(c,ox+x,oy+y,ww,hh,col);
+  const A=m.col,B=m.col2,gm=(x,y)=>{if(g){P(x,y,2,2,g);P(x,y,1,1,'#fff');}};
+  switch(type){
+    case 'sword':P(11,2,2,14,A);P(12,2,1,14,B);P(8,16,8,2,B);P(11,18,2,4,w);P(11,22,2,1,B);gm(11,16);break;
+    case 'dagger':P(11,8,2,8,A);P(12,8,1,8,B);P(9,16,6,2,B);P(11,18,2,3,w);gm(11,21);break;
+    case 'axe':P(11,3,2,20,w);P(13,4,5,8,A);P(17,3,2,10,A);P(6,5,5,6,B);P(5,4,1,8,B);gm(11,7);break;
+    case 'hammer':P(11,8,2,15,w);P(6,3,12,6,A);P(6,8,12,1,B);P(6,3,2,6,B);gm(11,5);break;
+    case 'spear':P(11,8,2,15,m.cls==='wood'?A:w);P(11,1,2,2,A);P(10,3,4,3,A);P(11,6,2,2,B);gm(11,9);break;
+    case 'staff':P(11,6,2,17,A);P(12,6,1,17,B);P(9,4,2,3,B);P(13,4,2,3,B);if(g){P(10,1,4,4,g);P(10,1,2,2,'#fff');}else P(10,2,4,3,A);break;
+    case 'bow':for(let y=2;y<22;y++){const x=8+Math.round(7*Math.sin(Math.PI*(y-2)/19));P(x,y,2,1,A);}P(8,2,1,20,'#d8cdb4');gm(15,11);break;
+    case 'shield':P(6,3,12,11,A);P(7,14,10,3,A);P(9,17,6,2,A);P(11,19,2,2,A);P(6,3,12,1,B);P(6,3,1,11,B);P(17,3,1,11,B);P(11,4,2,14,B);gm(11,9);break;
+    case 'gloves':for(const x of [3,13]){P(x,8,7,9,A);P(x,17,7,4,B);P(x+(x<10?7:-2),11,2,4,A);P(x+1,5,1,3,A);P(x+3,4,1,4,A);P(x+5,5,1,3,A);}gm(5,18);gm(15,18);break;
+    case 'boots':for(const x of [3,13]){P(x,4,5,13,A);P(x,17,8,4,A);P(x,20,8,1,B);P(x,4,5,2,B);}gm(4,8);gm(14,8);break;
+    case 'amulet':for(let i=0;i<7;i++){P(5+i,2+i,1,2,'#9a8f78');P(18-i,2+i,1,2,'#9a8f78');}P(9,11,6,7,A);P(10,10,4,9,A);P(9,11,1,7,B);if(g){P(11,13,2,3,g);P(11,13,1,1,'#fff');}break;
+  }
+}
+function drawTrophy(c,ox,oy,q){
+  const P=(x,y,w,h,col)=>R(c,ox+x,oy+y,w,h,col),g='#c9a44c',b='#efe6cc';
+  switch(q){
+    case 'dragon':P(8,6,11,11,'#4f7f4a');P(3,10,6,7,'#4f7f4a');P(3,10,6,1,'#6fa066');P(8,6,11,1,'#6fa066');P(12,9,3,2,'#e8d85a');P(13,9,1,2,'#0b0810');P(4,11,1,1,'#0b0810');P(14,2,2,4,b);P(18,3,2,4,b);P(4,17,1,2,b);P(7,17,1,2,b);P(10,17,1,2,b);P(8,17,11,2,'#3a5f38');break;
+    case 'salamander':P(4,14,6,3,'#e0762f');P(9,11,6,3,'#e0762f');P(14,8,5,3,'#e0762f');P(18,6,2,2,'#f2d66a');P(3,17,3,2,'#b0524a');P(8,14,1,3,'#f2d66a');P(13,11,1,3,'#f2d66a');break;
+    case 'barrow':P(5,14,14,4,g);P(5,8,2,6,g);P(11,6,2,8,g);P(17,8,2,6,g);P(8,11,2,3,g);P(14,11,2,3,g);P(11,15,2,2,'#9a5fd0');P(6,15,2,2,'#b0524a');P(16,15,2,2,'#b0524a');break;
+    case 'heist':P(7,6,10,12,'#b0524a');P(5,8,14,8,'#b0524a');P(9,9,6,6,'#7a2f2a');P(11,10,2,4,g);P(10,11,4,2,g);break;
+    case 'swamp':P(5,10,14,8,'#23212c');P(7,18,10,2,'#23212c');P(4,9,16,2,'#3d3a4a');P(6,8,12,1,'#4fae6a');P(9,5,2,2,'#4fae6a');P(14,3,2,2,'#7f9f66');P(6,20,2,2,'#3d3a4a');P(16,20,2,2,'#3d3a4a');break;
+    case 'stag':for(let i=0;i<14;i++)P(5+i,16-Math.round(6*Math.sin(i/13*3.1)),1,2,'#e8ecff');P(18,7,2,2,'#fff');P(4,9,1,1,'#fff');P(13,18,1,1,'#fff');break;
+    case 'golem':P(6,6,12,13,'#6b6876');P(5,9,14,7,'#6b6876');P(6,6,12,1,'#8d8a99');P(10,10,4,5,'#d0453f');P(11,11,2,2,'#f2d66a');P(8,17,3,1,'#3d3a4a');P(15,8,1,4,'#3d3a4a');break;
+    case 'tourney':P(7,4,10,8,g);P(9,12,6,2,g);P(11,14,2,4,g);P(8,18,8,2,g);P(4,5,3,1,g);P(4,5,1,5,g);P(4,9,3,1,g);P(17,5,3,1,g);P(19,5,1,5,g);P(17,9,3,1,g);P(8,5,2,5,'#f2e6a0');break;
+    case 'striga':P(4,8,16,4,g);for(let x=5;x<19;x+=3)P(x,12,2,8,g);P(11,9,2,2,'#b0524a');break;
+    case 'rabbit':P(7,9,10,9,'#f4f0e6');P(5,12,14,5,'#f4f0e6');P(9,7,3,3,'#e6dcc0');P(14,10,3,3,'#d8cdb4');P(8,18,3,2,'#e6dcc0');break;
+    case 'spider':P(7,7,10,11,'#d4d6e0');P(5,9,14,7,'#d4d6e0');P(7,10,10,1,'#9698a8');P(6,13,12,1,'#9698a8');P(10,7,1,11,'#9698a8');P(14,8,1,9,'#9698a8');P(17,16,4,1,'#d4d6e0');P(20,17,1,3,'#d4d6e0');break;
+    case 'ring':for(let i=0;i<16;i++){P(6+Math.round(i*.6),19-i,1,2,'#6b4a2f');P(7+Math.round(i*.6),19-i,Math.max(1,Math.round(5*Math.sin(i/15*3.1))),1,'#b08a55');P(6+Math.round(i*.6)-Math.round(3*Math.sin(i/15*3.1)),19-i,Math.max(1,Math.round(3*Math.sin(i/15*3.1))),1,'#8a6a45');}break;
+    case 'wall':P(12,2,2,14,'#bfe0e6');P(13,2,1,14,'#7fa8b5');P(11,5,1,9,'#e8f6fa');P(9,16,8,2,'#7fa8b5');P(12,18,2,4,'#3d3a4a');P(12,2,1,1,'#fff');break;
+    case 'bridge':P(4,17,5,3,'#3d3a4a');for(let i=0;i<13;i++)P(9+i,16-Math.round(5*Math.sin(i/12*4.6)),1,2,i%3?'#e0762f':'#f2d66a');P(21,13,1,1,'#f2d66a');P(20,10,1,1,'#b0524a');break;
+    case 'serpent':P(7,4,10,14,'#2f8f8a');P(5,7,14,8,'#2f8f8a');P(9,18,6,2,'#2f8f8a');P(8,6,3,8,'#6fd0c8');P(13,9,3,6,'#1f6662');break;
+  }
+}
+function drawMaster(c,t){
+  const mx=227,ty=76+(Math.sin(t/900)>.75?-1:0),ink='#0b0810',sh='#a89f88',sk='#c9a07a',gr='#b8b0a0',P=(x,y,w,h,col)=>R(c,x,y,w,h,col);
+  P(mx-8,ty,16,18,sh);P(mx-6,ty+3,12,15,'#6b4a2f');P(mx-5,ty,2,3,'#6b4a2f');P(mx+3,ty,2,3,'#6b4a2f');P(mx-2,ty+7,4,3,'#4d3020');
+  P(mx+8,ty+1,3,10,sh);P(mx+8,ty+11,3,2,sk);
+  if(F&&!F.done){ // hammering at the anvil
+    if(Math.sin(t/140)>0){P(mx-11,ty-6,3,8,sh);P(mx-11,ty-8,3,2,sk);P(mx-10,ty-14,1,7,'#6b4a2f');P(mx-13,ty-16,7,3,'#8d8f9c');}
+    else{P(mx-14,ty+1,6,3,sh);P(mx-16,ty+1,2,3,sk);P(mx-20,ty-1,5,1,'#6b4a2f');P(mx-22,ty-3,3,5,'#8d8f9c');P(mx-25,ty-5,1,1,'#f2d66a');P(mx-19,ty-6,1,1,'#f2d66a');P(mx-23,ty-8,1,1,'#e0962f');}
+  }else{P(mx-11,ty+1,3,10,sh);P(mx-11,ty+11,3,2,sk);}
+  P(mx-5,ty-10,10,10,sk);P(mx-6,ty-7,1,4,gr);P(mx+5,ty-7,1,4,gr);
+  P(mx-5,ty-10,10,2,'#4d3020');P(mx-4,ty-11,3,3,'#c9a44c');P(mx+1,ty-11,3,3,'#c9a44c');P(mx-3,ty-10,1,1,'#7fa8b5');P(mx+2,ty-10,1,1,'#7fa8b5');
+  if((t%5300)>150){P(mx-3,ty-6,2,2,ink);P(mx+1,ty-6,2,2,ink);}
+  P(mx-5,ty-3,10,5,gr);P(mx-4,ty+2,8,2,gr);P(mx-2,ty+4,4,2,gr);P(mx-1,ty-4,2,2,sk);
+}
+function drawScene(t){
+  const c=sx,night=phase==='night'||phase==='title';
+  R(c,0,0,256,100,'#17111f');
+  for(let y=0;y<100;y+=8)for(let x=((y/8)%2)*8-8;x<256;x+=16)R(c,x,y,15,7,'#1c1527');
+  R(c,0,100,256,44,'#241a2c');for(let y=100;y<144;y+=11){R(c,0,y,256,1,'#18111f');for(let x=((y-100)/11%2)*30+10;x<256;x+=60)R(c,x,y,1,11,'#18111f');}
+  R(c,0,98,256,2,'#0e0a13');
+  // door
+  R(c,10,46,34,54,'#0e0a13');R(c,14,42,26,4,'#0e0a13');R(c,13,50,28,50,'#3a2a2c');R(c,17,46,20,4,'#3a2a2c');
+  for(let x=20;x<41;x+=7)R(c,x,46,1,54,'#2a1e20');R(c,13,62,28,2,'#55466a');R(c,13,84,28,2,'#55466a');R(c,36,74,2,3,'#c9a44c');
+  if(S.ups.sign){R(c,17,26,20,13,'#33242a');R(c,18,27,18,11,'#55426e');R(c,22,30,10,5,'#c9a44c');R(c,24,28,3,2,'#c9a44c');R(c,30,31,4,2,'#c9a44c');R(c,20,22,1,4,'#8d8f9c');R(c,33,22,1,4,'#8d8f9c');}
+  // window
+  R(c,116,26,32,42,'#0e0a13');R(c,120,22,24,4,'#0e0a13');R(c,119,29,26,36,'#201a45');R(c,122,25,20,4,'#201a45');
+  for(const [x,y] of [[123,33],[140,31],[128,45],[142,44],[134,28]])R(c,x,y,1,1,(Math.sin(t/700+x)>0)?'#d8cdb4':'#7d76b5');
+  R(c,135,34,6,6,'#e6dcc0');R(c,134,35,8,4,'#e6dcc0');R(c,138,35,3,3,'#cdbf9c');
+  R(c,119,56,26,9,'#0f0b1c');R(c,123,48,5,9,'#0f0b1c');R(c,122,46,1,2,'#0f0b1c');R(c,125,46,1,2,'#0f0b1c');R(c,128,46,1,2,'#0f0b1c');R(c,134,52,8,5,'#0f0b1c');R(c,137,47,2,5,'#0f0b1c');R(c,125,51,1,2,'#e0962f');
+  R(c,131,25,2,40,'#0e0a13');R(c,119,46,26,1,'#0e0a13');R(c,114,68,36,3,'#33242a');
+  // hearth
+  if(S.ups.hearth){R(c,58,52,44,48,'#2e2438');R(c,56,48,48,5,'#40324e');R(c,64,66,32,34,'#0b0810');
+    const f=Math.sin(t/120),f2=Math.sin(t/90+2);R(c,70,90,20,8,'#b0524a');R(c,72,84+f,7,8,'#e0962f');R(c,81,82+f2,6,10,'#e0962f');R(c,76,88,8,8,'#f2d66a');R(c,66,96,28,3,'#3a2a2c');
+    glow(c,80,90,34+f*2,'#e0762f',.13);R(c,66,43,6,5,'#55426e');R(c,88,41,4,7,'#7f9f66');}
+  // shelves
+  const cnt=4+3*['smelter','jewel1','plans','curio','jewel2','vein','anvil1','anvil2'].filter(u=>S.ups[u]).length;
+  R(c,168,44,82,2,'#3a2a2c');R(c,168,68,82,2,'#3a2a2c');R(c,170,46,2,3,'#2a1e20');R(c,246,46,2,3,'#2a1e20');R(c,170,70,2,3,'#2a1e20');R(c,246,70,2,3,'#2a1e20');
+  const pal=['#b0524a','#4f7fd6','#4fae6a','#9a5fd0','#e0962f','#d4d6e0','#c9a44c','#bfe0e6'];
+  for(let i=0;i<cnt&&i<32;i++){const row=i%2,x=171+(i>>1)*5,y=row?68:44,k=i%4,col=pal[(i*5)%8];
+    if(k===0){R(c,x,y-6,3,6,col);R(c,x+1,y-8,1,2,'#d8cdb4');}else if(k===1){R(c,x,y-4,4,4,'#6b4a2f');R(c,x+1,y-3,2,2,col);}else if(k===2){R(c,x+1,y-9,1,9,'#8d8f9c');R(c,x,y-3,3,1,'#6b4a2f');}else{R(c,x,y-3,3,3,col);R(c,x,y-3,1,1,'#fff');}}
+  // relic wall
+  S.relics.filter(x=>!x.hid).slice(-6).forEach((x,i)=>{const [px,py]=SLOTS[i];
+    R(c,px-2,py-2,28,28,'#c9a44c');R(c,px-1,py-1,26,26,'#1f1717');R(c,px,py,24,24,'#2e2230');
+    if(x.kind==='art')drawItem(c,px,py,x.type,x.mat,x.gem);else drawTrophy(c,px,py,x.quest);
+    glow(c,px+12,py+12,15+Math.sin(t/500+i),x.kind==='art'&&x.gem?GEMS[x.gem].col:'#c9a44c',.07);});
+  // carpet
+  if(S.ups.carpet){R(c,62,112,104,24,'#3d2a55');R(c,64,114,100,20,'#55326e');R(c,64,114,100,1,'#c9a44c');R(c,64,133,100,1,'#c9a44c');for(let x=70;x<160;x+=12)R(c,x,122,4,4,'#c9a44c');}
+  // hero
+  heroX+=(heroTo-heroX)*.06;const moving=Math.abs(heroTo-heroX)>1.5;
+  const hh=hero||heroGone;
+  if(heroGone&&!hero&&heroX<29)heroGone=null;
+  if(hero||heroGone)drawHero(c,Math.round(heroX),126,hero||heroGone,moving?Math.round(Math.abs(Math.sin(t/90))*2)*-1:(Math.sin(t/600)>.6?-1:0));
+  drawMaster(c,t);
+  // counter + anvil
+  R(c,172,92,84,7,'#553c36');R(c,172,92,84,1,'#6e5048');R(c,176,99,80,34,'#33242a');for(let x=186;x<256;x+=14)R(c,x,99,1,34,'#2a1e20');R(c,176,131,80,2,'#1f1717');
+  const an=S.ups.anvil1?'#55566a':'#3d3a4a';R(c,196,80,22,5,an);R(c,190,81,6,3,an);R(c,202,85,10,3,'#2a2833');R(c,198,88,18,4,an);if(S.ups.anvil1)R(c,204,89,6,2,'#c9a44c');
+  if(S.ups.anvil2){R(c,222,84,16,8,'#6b4a2f');R(c,220,86,3,3,'#8d8f9c');R(c,226,82,8,2,'#3a2a2c');}
+  // candle
+  const fl=Math.sin(t/110)+Math.sin(t/67);R(c,181,84,3,8,'#d8cdb4');R(c,182,81+(fl>1?-1:0),1,3,'#f2d66a');glow(c,182,82,22+fl,'#e0962f',.12);
+  if(S.ups.carpet){for(const x of [70,156]){R(c,x,60,2,6,'#d8cdb4');R(c,x-2,66,6,2,'#8d8f9c');R(c,x,57,2,3,'#f2d66a');glow(c,x+1,58,14+fl,'#e0962f',.09);}}
+  // cat
+  if(S.ups.cat){const bl=(t%4200)<160,tail=Math.sin(t/500)>0;R(c,240,84,10,8,'#17131c');R(c,241,78,8,7,'#17131c');R(c,241,76,2,2,'#17131c');R(c,247,76,2,2,'#17131c');if(!bl){R(c,242,80,2,2,'#e8d85a');R(c,246,80,2,2,'#e8d85a');}R(c,250,tail?86:88,4,2,'#17131c');R(c,253,tail?83:86,1,4,'#17131c');}
+  // night tint
+  if(night){c.fillStyle='rgba(8,5,20,.5)';c.fillRect(0,0,256,144);glow(c,132,45,30,'#7d76b5',.1);glow(c,182,82,20+fl,'#e0962f',.14);}
+  // vignette
+  c.fillStyle='rgba(0,0,0,.35)';c.fillRect(0,0,256,3);c.fillRect(0,141,256,3);c.fillRect(0,0,3,144);c.fillRect(253,0,3,144);
+}
+function loop(t){drawScene(t);requestAnimationFrame(loop);}
+
+/* ================= AUDIO ================= */
+const Au={ctx:null,on:false,tm:null,bar:0,
+  init(){if(this.ctx)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const a=this.ctx=new C();
+    this.sfx=a.createGain();this.sfx.gain.value=.25;this.sfx.connect(a.destination);
+    this.mus=a.createGain();this.mus.gain.value=0;const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1100;
+    const dl=a.createDelay(1);dl.delayTime.value=.46;const fb=a.createGain();fb.gain.value=.38;
+    this.mus.connect(lp);lp.connect(a.destination);lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(a.destination);},
+  note(f,t,d,type,g,dest){const a=this.ctx,o=a.createOscillator(),v=a.createGain();o.type=type;o.frequency.value=f;
+    v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g,t+Math.min(.25,d*.3));v.gain.linearRampToValueAtTime(0,t+d);o.connect(v);v.connect(dest||this.mus);o.start(t);o.stop(t+d+.05);},
+  clang(q){if(!this.ctx)return;const t=this.ctx.currentTime;this.note(q?1320:420,t,.25,'square',.25,this.sfx);this.note(q?1975:300,t,.18,'triangle',.3,this.sfx);},
+  tick(v){if(!this.ctx)return;const t=this.ctx.currentTime;this.note(v>0?880:v<0?175:440,t,.14,v<0?'sawtooth':'triangle',v<0?.12:.22,this.sfx);},
+  fanfare(k){if(!this.ctx)return;const t=this.ctx.currentTime,hz=n=>220*Math.pow(2,n/12);
+    const seq=[[0,4,7,12,16],[0,4,7],[0,3],[3,0,-5]][k];seq.forEach((n,i)=>this.note(hz(n+(k===3?-12:12)),t+i*.13,k===0?.5:.35,k===3?'sawtooth':'square',.14,this.sfx));},
+  coin(){if(!this.ctx)return;const t=this.ctx.currentTime;this.note(1568,t,.12,'square',.12,this.sfx);this.note(2093,t+.08,.2,'square',.12,this.sfx);},
+  sched(){const a=this.ctx,t=a.currentTime+.1,B=4.4,hz=n=>110*Math.pow(2,n/12);
+    // A minor: Am F C G / Am Em F E
+    const ch=[[0,3,7],[-4,0,3],[3,7,10],[-2,2,5],[0,3,7],[-5,-2,2],[-4,0,3],[-5,-1,2]][this.bar%8];
+    for(const n of ch){this.note(hz(n+12),t,B,'sawtooth',.045);this.note(hz(n+12)*1.006,t,B,'sawtooth',.035);}
+    this.note(hz(ch[0]-12),t,B,'triangle',.16);
+    const sc=[0,2,3,5,7,8,10,12,14,15];let i=this.mel??4;
+    for(let s=0;s<8;s++){if(Math.random()<.62){i=Math.max(0,Math.min(9,i+rnd([-2,-1,-1,1,1,2])));if(s===0)i=sc.indexOf(((ch[rnd([0,1,2])]%12)+12)%12)>=0?sc.indexOf(((ch[rnd([0,1,2])]%12)+12)%12):i;
+      this.note(hz(sc[i]+24),t+s*B/8,B/8*1.6,'square',.05);}}
+    this.mel=i;this.bar++;this.tm=setTimeout(()=>this.sched(),B*1000);},
+  toggle(){this.init();if(!this.ctx)return;this.ctx.resume();this.on=!this.on;clearTimeout(this.tm);
+    this.mus.gain.linearRampToValueAtTime(this.on?.5:0,this.ctx.currentTime+.6);if(this.on)this.sched();
+    $('bMusic').textContent=this.on?'♪ вкл':'♪ выкл';}
+};
+
+/* ================= UI ================= */
+const panel=$('panel'),speech=$('speech');
+const pips=n=>'◆'.repeat(n)+'◇'.repeat(3-n);
+function say(who,txt,chips){speech.innerHTML=(who?`<div class="who">${who}${chips||''}</div>`:'')+`<div>${txt}</div>`;}
+function title(){
+  phase='title';hero=null;heroGone=null;stats();
+  const hasSave=!!localStorage.getItem(SAVE);
+  say('','<i>Тракт у Серой заставы. Туман, вороньё и скрип твоей вывески. Скоро постучат первые искатели славы…</i>');
+  panel.innerHTML=`<div class="center"><h2>Лавка открывается на рассвете</h2>
+  <p class="lead">К тебе приходят герои и рассказывают, на какой подвиг собрались. Подбери изделие, материал и камень — под сам подвиг и под самого героя. Скуй вещь, отпусти героя и жди ворона с вестями: за успех платят золотом.</p>
+  <button class="big" id="bStart">${hasSave?'Продолжить, день '+S.day:'Открыть лавку'}</button>
+  ${hasSave?'<p><button class="sm" id="bNew">Начать заново</button></p>':''}</div>`;
+}
+function startDay(){
+  phase='shop';const used=[];const hs=[];D0=[];
+  for(let i=0;i<perDay();i++){const h=makeHero(used,hs.map(x=>x.id));used.push(h.quest);hs.push(h);}
+  D={heroes:hs,i:0,pending:[],pick:null};stats();nextHero();
+}
+function nextHero(){
+  if(D.i>=D.heroes.length)return night();
+  hero=D.heroes[D.i];heroGone=null;heroX=27;heroTo=118;
+  D.pick={type:null,mat:null,gem:null};
+  const q=QUESTS[hero.quest],r=RACES[hero.race],k=CLASSES[hero.cls];
+  const chips=(hero.back?`<span class="chip vet">старый знакомый · подвигов: ${hero.wins}</span>`:'')+(hero.trait?`<span class="chip">${TRAITS[hero.trait].chip}</span>`:'');
+  const hi=(hero.back?BACKHI[hero.last.t](hero):r.hi)+(q.tier&&!hero.back?[' О твоей лавке говорят во всех трактирах — потому я и здесь.',' О твоей лавке уже слагают песни — к кому ещё идти с таким делом?'][q.tier-1]:'');
+  say(`${full(hero)} <small>— ${r[hero.f?'f':'m']}, ${k[hero.f?'f':'m']}</small>`,
+    gt(`«${hi} ${q.ask} ${q.hint}${hero.trait?' '+TRAITS[hero.trait].say:''}»`,hero),chips);
+  renderShop();
+}
+function cost(p){return (p.mat?MATS[p.mat].cost:0)+(p.gem?GEMS[p.gem].cost:0);}
+function itemName(p){return TYPES[p.type].name+' '+MATS[p.mat].of+(p.gem?' '+GEMS[p.gem].w:'');}
+function renderShop(){
+  const p=D.pick,q=QUESTS[hero.quest];
+  const tile=(k,id,n,d,c,lock,dis)=>`<button class="tile ${p[k]===id?'on':''} ${lock?'lock':''}" data-k="${k}" data-id="${id}" ${lock||dis?'disabled':''}><span class="n">${n}</span><span class="d">${d}</span>${c?`<span class="c">${c}</span>`:''}</button>`;
+  let h=`<div class="quest"><span>Подвиг: <b>${q.title}</b>${q.tier?` <span class="famed" title="Такие подвиги приносят только при славе ${TIERFAME[q.tier]} и выше">✦ привела слава лавки (${TIERFAME[q.tier]}+)</span>`:''}</span><span>Посетитель ${D.i+1} из ${D.heroes.length} · награда героя <span class="pay">${q.pay} зол.</span></span></div>`;
+  h+='<h3>Изделие</h3><div class="grid">';
+  for(const id in TYPES){const T=TYPES[id],lock=!has(T.up);h+=tile('type',id,T.name,lock?'нужны чертежи':T.cls.map(c=>CLSNAME[c]).join(', ')+(T.two?' · двуручное':''),'',lock);}
+  h+='</div><h3>Материал</h3><div class="grid">';
+  for(const id in MATS){const M=MATS[id];if(!has(M.up))continue;const rest=S.gold-(p.gem?GEMS[p.gem].cost:0);
+    h+=tile('mat',id,M.name,`${CLSNAME[M.cls]}<br>лёгкость ${pips(M.light)}<br>прочность ${pips(M.str)}<br>чары ${pips(M.arc)}<br>${TAGS.filter(t=>M[t[0]]).map(t=>t[1]).join(', ')}`,M.cost?M.cost+' зол.':'в закромах',0,M.cost>rest);}
+  h+='</div><h3>Камень</h3><div class="grid">'+tile('gem','','Без камня','просто добрая вещь','');
+  for(const id in GEMS){const G=GEMS[id];if(!has(G.up))continue;const rest=S.gold-(p.mat?MATS[p.mat].cost:0);h+=tile('gem',id,G.name,G.pow,G.cost+' зол.',0,G.cost>rest);}
+  h+='</div>';
+  const ready=p.type&&p.mat;
+  let cat='';
+  if(S.ups.cat&&ready){const e=evaluate(hero,q,{...p,gem:p.gem||null,q:1});cat=e.n.some(n=>n.hero&&n.v<0)?'Кот смотрит на героя, потом на вещь — и шипит.':'Кот одобрительно мурчит.';}
+  h+=`<div class="craftrow"><canvas id="prev" width="24" height="24"></canvas><div class="txt"><div class="nm">${ready?itemName(p):'<span class="muted">Выбери изделие и материал</span>'}</div>
+    <div class="muted">${ready?'Расход: '+cost(p)+' зол.':''}</div><div class="cat">${cat}</div></div>
+    <button class="big" id="bForge" ${ready?'':'disabled'}>К наковальне</button></div>`;
+  panel.innerHTML=h;
+  if(ready)drawItem($('prev').getContext('2d'),0,0,p.type,p.mat,p.gem);
+}
+/* --- forge mini-game --- */
+let F=null;
+function forge(){
+  const lv=(S.ups.anvil1?1:0)+(S.ups.anvil2?1:0),good=.14+.05*lv,perf=.045+.02*lv;
+  F={n:0,sum:0,t0:performance.now(),good,perf,done:false,hits:[]};
+  $('modalBody').innerHTML=`<div class="center"><h2>У наковальни</h2><p class="muted">Три удара молотом. Бей, когда метка в светлой полосе — а лучше в золотой. Пробел или кнопка.</p>
+   <canvas id="fprev" width="24" height="24" style="width:120px;height:120px;margin:0 auto"></canvas>
+   <div class="bar"><div class="good" style="left:${(.5-good)*100}%;width:${good*200}%"></div><div class="perf" style="left:${(.5-perf)*100}%;width:${perf*200}%"></div><div class="mk" id="mk"></div></div>
+   <div class="hits" id="hits">&nbsp;</div><p><button class="big" id="bHit">Удар!</button></p></div>`;
+  drawItem($('fprev').getContext('2d'),0,0,D.pick.type,D.pick.mat,D.pick.gem);
+  $('modal').classList.add('show');Au.init();
+  const tick=now=>{if(!F||F.done)return;const sp=.55+.22*F.n,ph=((now-F.t0)/1000*sp)%2;F.pos=ph<1?ph:2-ph;const mk=$('mk');if(mk)mk.style.left=F.pos*100+'%';requestAnimationFrame(tick);};
+  requestAnimationFrame(tick);
+}
+function strike(){
+  if(!F||F.done)return;const d=Math.abs(F.pos-.5),v=d<=F.perf?2:d<=F.good?1:0;
+  F.sum+=v;F.n++;F.hits.push(['мимо','хорошо','точно!'][v]);F.t0=performance.now()-Math.random()*900;Au.clang(v);
+  $('hits').textContent=F.hits.join(' · ');
+  if(F.n>=3){F.done=true;const q=F.sum>=5?2:F.sum>=3?1:0;D.pick.q=q;
+    $('hits').innerHTML=F.hits.join(' · ')+`<br><b style="color:var(--gold)">${['Вышло грубовато','Добротная работа','Мастерская работа!'][q]}</b>`;
+    const b=$('bHit');b.textContent='Отдать герою';b.id='bGive';}
+}
+function give(){
+  $('modal').classList.remove('show');F=null;
+  const p={...D.pick,gem:D.pick.gem||null},q=QUESTS[hero.quest];
+  S.gold-=cost(p);S.served++;stats();
+  D.pending.push({hero,item:p,res:evaluate(hero,q,p)});
+  say(full(hero),gt(rnd(['«Беру! Жди ворона с вестями.»','«Хм. Ну, тебе виднее, мастер. Пожелай мне удачи.»','«Славная вещица. Вернусь — расплачусь.»']),hero));
+  heroGone=hero;hero=null;heroTo=27;D.i++;
+  panel.innerHTML='<div class="center muted"><i>Дверь скрипнула. В лавке снова тихо…</i></div>';
+  setTimeout(()=>{if(phase==='shop')nextHero();},1700);
+}
+/* --- night: reports, opened one by one --- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function night(){
+  phase='night';hero=null;heroGone=null;
+  say('','<i>Стемнело. В окно стучит клювом ворон — принёс вести о сегодняшних героях.</i>');
+  let total=0,fame=0;const fresh=[];
+  for(const r of D.pending){
+    const h=r.hero,q=QUESTS[h.quest],t=r.res.tier;
+    r.pay=Math.round(q.pay*MULT[t]*(S.ups.carpet&&t<=1?1.2:1));r.fame=FAME[t];total+=r.pay;fame+=r.fame;
+    let rec=S.roster.find(x=>x.id===h.id);
+    if(!rec){rec={id:h.id,race:h.race,cls:h.cls,f:h.f,trait:h.trait,name:h.name,wins:0,title:null,tt:-1};S.roster.push(rec);}
+    r.before=full(rec);const vet=rec.wins>=1;
+    if(t<=1)rec.wins++;rec.last={q:h.quest,t};rec.day=S.day;
+    if(t===0&&q.tier>=rec.tt){const nt=gt(q.tt,h);if(rec.title!==nt){rec.title=nt;r.newTitle=1;}rec.tt=q.tier;}
+    r.after=full(rec);
+    // rare rewards: only triumphs on dangerous quests
+    if(t===0&&q.tier>=1){
+      const nm=q.art.find(n=>!S.relics.some(x=>x.name===n));
+      if(vet&&nm)r.relic={kind:'art',type:r.item.type,mat:r.item.mat,gem:r.item.gem,quest:h.quest,name:nm,
+        story:gt(`${itemName(r.item)}. С этой вещью ${r.after} ${q.deed} — и вернул{|а} её мастеру: «Пусть висит на почётном месте». День ${S.day}.`,h)};
+      else if(!S.relics.some(x=>x.kind==='trophy'&&x.quest===h.quest)&&Math.random()<(q.tier===2?.5:.3))
+        r.relic={kind:'trophy',quest:h.quest,name:q.trophy[0],story:gt(`${q.trophy[1]} Прислал{|а} ${r.after}, день ${S.day}.`,h)};
+      if(r.relic){S.relics.push(r.relic);fresh.push(r.relic);}
+    }
+  }
+  D.crossed=TIERFAME.findIndex(x=>x>0&&S.fame<x&&S.fame+fame>=x);
+  S.gold+=total;S.fame+=fame;S.day++;
+  while(S.roster.length>14){const w=S.roster.slice().sort((a,b)=>a.wins-b.wins||a.day-b.day)[0];S.roster.splice(S.roster.indexOf(w),1);}
+  save();fresh.forEach(x=>x.hid=1);
+  D.hideGold=total;D.hideFame=fame;D.total=total;D.rep=0;stats();sealed();
+}
+function sealed(){
+  const r=D.pending[D.rep],q=QUESTS[r.hero.quest];
+  panel.innerHTML=`<h2>Вести с ворона <small class="muted">· письмо ${D.rep+1} из ${D.pending.length}</small></h2>
+   <div class="letter" id="let"><canvas width="40" height="56"></canvas><div style="flex:1">
+    <div class="t">${r.before}</div><div class="muted">${q.title} — ${itemName(r.item)}</div>
+    <ul id="notes"></ul><div id="verdict"></div></div></div>
+   <div class="center" id="act"><button class="big" id="bSeal">Сломать печать</button></div>`;
+  const c=panel.querySelector('canvas').getContext('2d');drawHero(c,14,54,r.hero,0);drawItem(c,17,30,r.item.type,r.item.mat,r.item.gem);
+}
+async function reveal(){
+  const r=D.pending[D.rep],q=QUESTS[r.hero.quest],t=r.res.tier,tok=D,alive=()=>D===tok&&phase==='night';
+  const act=$('act'),ul=$('notes'),vd=$('verdict');
+  act.innerHTML='<span class="wait">Ворон косится, пока ты читаешь…</span>';
+  for(const n of r.res.n){await sleep(560);if(!alive())return;
+    ul.insertAdjacentHTML('beforeend',`<li class="${n.v>0?'p':n.v<0?'m':'z'}">${n.v>0?'✦':n.v<0?'✖':'·'} ${n.t}</li>`);Au.tick(n.v);}
+  await sleep(700);if(!alive())return;vd.innerHTML='<div class="wait">И чем же всё кончилось?..</div>';
+  await sleep(1500);if(!alive())return;
+  vd.innerHTML=`<div class="stamp o${t}">${OUT[t]}</div><p>${gt(q.out[t],r.hero)}</p>`;Au.fanfare(t);
+  if(t===0||t===3)$('let').classList.add(t===0?'flash':'shake');
+  await sleep(900);if(!alive())return;
+  vd.insertAdjacentHTML('beforeend',`<div class="pay">${t===3?'Утешительная плата':'Плата'}: ${r.pay} зол.${S.ups.carpet&&t<=1?' (с уютной надбавкой)':''}${r.fame?' · слава +'+r.fame:''}</div>`);
+  D.hideGold-=r.pay;D.hideFame-=r.fame;stats();Au.coin();
+  if(r.newTitle){await sleep(900);if(!alive())return;vd.insertAdjacentHTML('beforeend',`<div class="gain">За этот подвиг героя отныне зовут: <b>${r.after}</b></div>`);Au.fanfare(1);}
+  if(r.relic){await sleep(1200);if(!alive())return;delete r.relic.hid;
+    vd.insertAdjacentHTML('beforeend',`<div class="gain">${r.relic.kind==='art'?'Ворон принёс свёрток. Вещь вернулась в лавку легендой':'К письму привязан трофей'}: <b>«${r.relic.name}»</b><br><span class="muted">${r.relic.story} Теперь висит на стене лавки.</span></div>`);Au.fanfare(0);}
+  await sleep(500);if(!alive())return;
+  D.rep++;
+  if(D.rep<D.pending.length)act.innerHTML='<button class="big" id="bNextL">Следующее письмо</button>';
+  else{if(D.crossed>0)Au.fanfare(0);act.innerHTML=(D.crossed>0?`<div class="gain" style="text-align:left;margin-bottom:10px"><b>Слава лавки достигла ${TIERFAME[D.crossed]}!</b><br>${['','О «Ржавом Грифоне» заговорили в трактирах. С завтрашнего дня слава будет приводить героев с подвигами опаснее и дороже — они помечены знаком ✦.','О «Ржавом Грифоне» слагают песни. Слава приведёт героев с великими подвигами — самыми опасными и самыми щедрыми.'][D.crossed]}</div>`:'')+`<div class="craftrow" style="text-align:left"><div class="txt"><div class="nm">За день заработано: <span style="color:var(--gold)">${D.total} зол.</span></div>
+    <div class="muted">${S.fame>=TIERFAME[2]?'О лавке слагают песни — идут герои на великие подвиги.':S.fame>=TIERFAME[1]?'О лавке говорят в трактирах — заглядывают герои посерьёзнее.':'Пока о лавке знают только соседи. Слава приведёт героев с подвигами опаснее и дороже.'}</div></div>
+    <button class="big" id="bMarket">На ярмарку</button></div>`;}
+}
+function market(){
+  phase='market';
+  say('','<i>Утренняя ярмарка у заставы. Гномы-плавильщики, ювелиры, торговцы диковинами — и корзина с котятами.</i>');
+  let h='<h2>Ярмарка — улучшения</h2>';
+  for(const g of ['Мастерская','Лавка']){h+=`<h3>${g}</h3><div class="ups">`;
+    for(const u of UPS.filter(u=>u.g===g)){const own=S.ups[u.id],need=u.req&&!S.ups[u.req];
+      h+=`<div class="up ${own?'own':''}"><div class="n">${u.name}</div><div class="d">${u.desc}${need?`<br><i>Сперва: ${UPS.find(x=>x.id===u.req).name}</i>`:''}</div>
+      <button data-up="${u.id}" ${own||need||S.gold<u.cost?'disabled':''}>${own?'Куплено':u.cost+' зол.'}</button></div>`;}
+    h+='</div>';}
+  h+=`<div class="craftrow"><div class="txt muted">Материалы и камни покупаются перед ковкой — оставь немного золота на завтра.</div><button class="big" id="bDay">Открыть лавку · день ${S.day}</button></div>`;
+  panel.innerHTML=h;stats();
+}
+function book(){
+  const row=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+  $('modalBody').innerHTML=`<h2>Гримуар лавочника</h2>
+  <p class="muted">Слушай героя: в его рассказе всегда есть намёк, чего бояться и что пригодится. Остальное — здесь.</p>
+  <h3>Народы</h3><table>
+   ${row('Эльфы','Холодное железо жжёт им руки. Любят невесомые вещи и луки.')}
+   ${row('Гномы','Руки коротки для лука. С молотом и секирой — как дома.')}
+   ${row('Орки','Ломают всё хрупкое. Мелкие вещицы теряются в лапе. Ценят самое прочное.')}
+   ${row('Полурослики','Двуручное и молоты им велики, тяжёлое не унести. Ловки с кинжалом и в сапогах.')}
+   ${row('Люди','Ко всему привычны.')}</table>
+  <h3>Ремёсла</h3><table>
+   ${row('Воин','Меч, секира, копьё, молот, щит. Посохи и амулеты ему чужды.')}
+   ${row('Следопыт','Лук, кинжал, копьё, сапоги. Молотом махать не любит.')}
+   ${row('Маг','Только посох и амулет — и из материала, что проводит чары.')}
+   ${row('Плут','Кинжал, сапоги, перчатки. Ничего тяжёлого и громоздкого.')}
+   ${row('Жрец','Молот, посох, щит, амулет. Обет запрещает острое. Чтит святой металл.')}</table>
+  <h3>Увечья</h3><table>
+   ${row('Одна рука','Секира, лук и копьё требуют двух рук. Пара перчаток — наполовину зря.')}
+   ${row('Один глаз','Из лука не попасть — разве что камень подарит соколиный глаз.')}
+   ${row('Деревянная нога','Сапоги — плохой подарок.')}</table>
+  <h3>Из чего что делают</h3><table>${Object.values(TYPES).map(T=>row(T.name+(T.two?' <span class="muted">(двуручное)</span>':''),T.cls.map(c=>CLSNAME[c]).join(', '))).join('')}</table>
+  <h3>Камни</h3><table>${Object.values(GEMS).map(G=>row(G.name,G.pow)).join('')}</table>
+  <p class="center"><button id="bClose">Закрыть</button></p>`;
+  $('modal').classList.add('show');
+}
+/* --- events --- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='bMusic')return Au.toggle();
+  if(b.id==='bBook')return book();
+  if(b.id==='bClose')return $('modal').classList.remove('show');
+  if(b.id==='bStart'){Au.init();return startDay();}
+  if(b.id==='bNew'){if(confirm('Стереть сохранение и начать заново?')){localStorage.removeItem(SAVE);S={day:1,gold:20,fame:0,ups:{},served:0,roster:[],relics:[],nextId:1};title();}return;}
+  if(b.id==='bForge')return forge();
+  if(b.id==='bHit')return strike();
+  if(b.id==='bGive')return give();
+  if(b.id==='bMarket')return market();
+  if(b.id==='bSeal')return reveal();
+  if(b.id==='bNextL')return sealed();
+  if(b.id==='bDay')return startDay();
+  if(b.dataset.up){const u=UPS.find(u=>u.id===b.dataset.up);if(S.gold>=u.cost&&!S.ups[u.id]){S.gold-=u.cost;S.ups[u.id]=1;save();Au.coin();market();}return;}
+  if(b.dataset.k&&phase==='shop'){D.pick[b.dataset.k]=b.dataset.id||null;renderShop();}
+});
+const tip=$('tip');
+function relicAt(e){const b=scene.getBoundingClientRect(),x=(e.clientX-b.left)/b.width*256,y=(e.clientY-b.top)/b.height*144;
+  const list=S.relics.filter(r=>!r.hid).slice(-6);
+  for(let i=0;i<list.length;i++){const [px,py]=SLOTS[i];if(x>=px-2&&x<px+26&&y>=py-2&&y<py+26)return list[i];}return null;}
+function showTip(e){const r=relicAt(e);scene.style.cursor=r?'help':'';if(!r){tip.style.display='none';return;}
+  tip.innerHTML=`<b>«${r.name}»</b><br>${r.story}`;tip.style.display='block';
+  const st=scene.parentNode.getBoundingClientRect();
+  tip.style.left=Math.max(4,Math.min(e.clientX-st.left+14,st.width-tip.offsetWidth-4))+'px';tip.style.top=(e.clientY-st.top+16)+'px';}
+scene.addEventListener('mousemove',showTip);scene.addEventListener('click',showTip);scene.addEventListener('mouseleave',()=>tip.style.display='none');
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&F){e.preventDefault();F.done?give():strike();}});
+load();title();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
